@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الكتب والمواد | مدرستي</title>
+
+  <script src="libs/tailwind.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { cairo: ['Cairo', 'sans-serif'] } } } };
+  </script>
+
+  <link href="libs/aos.css" rel="stylesheet" />
+  <link href="css/style.css" rel="stylesheet" />
+
+  <style>
+    .book-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 191, 36, 0.1);
+      border-radius: 20px;
+      padding: 20px;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .book-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(251, 191, 36, 0.12) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+    .book-card:hover::before { opacity: 1; }
+    .book-card:hover {
+      border-color: rgba(251, 191, 36, 0.35);
+      box-shadow: 0 25px 60px rgba(251, 191, 36, 0.12);
+    }
+
+    .book-cover {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.4s ease;
+    }
+    .book-card:hover .book-cover { transform: scale(1.03); }
+
+    .book-cover::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      inset-inline-start: 0;
+      width: 10px;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .book-cover::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%);
+      transform: translateX(-100%) rotate(45deg);
+      transition: transform 0.6s ease;
+    }
+    .book-card:hover .book-cover::before { transform: translateX(100%) rotate(45deg); }
+
+    .book-cover[data-color="amber"]   { background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #f59e0b 100%); }
+    .book-cover[data-color="blue"]    { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%); }
+    .book-cover[data-color="emerald"] { background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #10b981 100%); }
+    .book-cover[data-color="rose"]    { background: linear-gradient(135deg, #881337 0%, #be123c 50%, #f43f5e 100%); }
+    .book-cover[data-color="purple"]  { background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #a855f7 100%); }
+    .book-cover[data-color="cyan"]    { background: linear-gradient(135deg, #164e63 0%, #0e7490 50%, #06b6d4 100%); }
+    .book-cover[data-color="slate"]   { background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #64748b 100%); }
+    .book-cover[data-color="indigo"]  { background: linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%); }
+
+    .book-cover-icon {
+      width: 80px;
+      height: 80px;
+      color: rgba(255, 255, 255, 0.9);
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+      z-index: 2;
+      position: relative;
+    }
+
+    .book-cover-label {
+      position: absolute;
+      bottom: 12px;
+      inset-inline-start: 18px;
+      inset-inline-end: 12px;
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.95);
+      letter-spacing: 0.15em;
+      text-align: center;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      z-index: 2;
+    }
+
+    .book-cat-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #fcd34d;
+      margin-bottom: 8px;
+      align-self: flex-start;
+    }
+
+    .book-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 6px;
+      line-height: 1.4;
+      min-height: 40px;
+    }
+    .book-meta {
+      font-size: 10px;
+      color: #78716c;
+      font-weight: 700;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    .book-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .book-action-btn {
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: 'Cairo', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid;
+    }
+    .book-action-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    .btn-read {
+      background: rgba(251, 191, 36, 0.12);
+      border-color: rgba(251, 191, 36, 0.35);
+      color: #fcd34d;
+    }
+    .btn-read:hover {
+      background: rgba(251, 191, 36, 0.22);
+      border-color: rgba(251, 191, 36, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(251, 191, 36, 0.25);
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+      border-color: transparent;
+      color: #1c1917;
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+    }
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(251, 191, 36, 0.45);
+    }
+
+    .btn-coming-soon {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .btn-coming-soon:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+  </style>
+</head>
+
+<body class="font-cairo overflow-x-hidden">
+
+  <div id="three-bg"></div>
+  <div class="glow-orb o1"></div>
+  <div class="glow-orb o2"></div>
+
+  <div id="sidebar-mount"></div>
+
+  <main id="main-content">
+    <div id="header-mount"></div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+      <section id="hero">
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight">
+          <span class="bg-gradient-to-l from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent" data-i18n="pageBooksTitle">الكتب والمواد</span>
+        </h1>
+        <p class="mt-2 text-stone-400 text-sm sm:text-base" data-i18n="pageBooksSub">الكتب المدرسية وملفات PDF</p>
+        <p class="text-xs text-amber-200/50 mt-2 font-bold" data-i18n="booksComingSoon">📚 الكتب قيد الرفع — سيتم إتاحتها للتحميل قريباً</p>
+      </section>
+
+      <section id="books-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></section>
+
+    </div>
+  </main>
+
+  <div id="bottom-nav-mount"></div>
+
+  <script src="libs/sweetalert2.min.js" defer></script>
+  <script src="libs/gsap.min.js" defer></script>
+  <script src="libs/three.min.js" defer></script>
+  <script src="libs/aos.js" defer></script>
+  <script src="js/sound-manager.js" defer></script>
+  <script src="js/three-scene.js" defer></script>
+  <script src="js/app.js" defer></script>
+
+  <script defer>
+    document.addEventListener('madrasati:ready', () => {
+      const App = window.App;
+
+      const books = [
+        { id: 'ict',         color: 'amber',   icon: 'chip',    cat_ar: 'تقنيات',     cat_en: 'Technology',   title_ar: 'تكنولوجيا المعلومات والاتصالات', title_en: 'Information & Communication Technology', file: '' },
+        { id: 'csharp',      color: 'purple',  icon: 'code',    cat_ar: 'برمجة',      cat_en: 'Programming',  title_ar: 'البرمجة بلغة C#',                 title_en: 'C# Programming',                         file: '' },
+        { id: 'networks',    color: 'blue',    icon: 'network', cat_ar: 'شبكات',      cat_en: 'Networks',     title_ar: 'أساسيات الشبكات',                 title_en: 'Networking Fundamentals',                file: '' },
+        { id: 'digital',     color: 'cyan',    icon: 'binary',  cat_ar: 'رقمية',      cat_en: 'Digital',      title_ar: 'الدارات الرقمية',                 title_en: 'Digital Circuits',                       file: '' },
+        { id: 'electronics', color: 'emerald', icon: 'bolt',    cat_ar: 'إلكترونيات', cat_en: 'Electronics',  title_ar: 'الدارات الإلكترونية',             title_en: 'Electronic Circuits',                    file: '' },
+        { id: 'maintenance', color: 'rose',    icon: 'wrench',  cat_ar: 'صيانة',      cat_en: 'Maintenance',  title_ar: 'الصيانة المادية والبرمجية',       title_en: 'Hardware & Software Maintenance',        file: '' },
+        { id: 'math',        color: 'indigo',  icon: 'math',    cat_ar: 'رياضيات',    cat_en: 'Math',         title_ar: 'الرياضيات',                       title_en: 'Mathematics',                            file: '' },
+        { id: 'arabic',      color: 'slate',   icon: 'book',    cat_ar: 'عربي',       cat_en: 'Arabic',       title_ar: 'اللغة العربية',                   title_en: 'Arabic Language',                        file: '' },
+      ];
+
+      const icons = {
+        chip: '<rect x="6" y="6" width="12" height="12" rx="1" /><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" stroke-linecap="round" />',
+        code: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 6l-6 6 6 6M16 6l6 6-6 6M14 4l-4 16" />',
+        network: '<circle cx="12" cy="5" r="2.5" /><circle cx="5" cy="19" r="2.5" /><circle cx="19" cy="19" r="2.5" /><path d="M12 7.5v4M12 11.5l-5 5M12 11.5l5 5" stroke-linecap="round" />',
+        binary: '<rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" />',
+        bolt: '<path stroke-linecap="round" stroke-linejoin="round" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />',
+        wrench: '<path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4L15 12l-3-3 2.7-2.7z" />',
+        math: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 6h4M5 10h4M5 14h4M5 18h4M15 6h4M15 18h4M13 12h8" />',
+        book: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 4h9a3 3 0 013 3v13a2 2 0 00-2-2H4V4zM4 18a2 2 0 012-2h10" />',
+      };
+
+      function getT(key) {
+        const lang = App.getCurrentLang();
+        const extra = {
+          ar: { read: 'قراءة', download: 'تحميل', comingSoon: 'قريباً', hint: 'سيتم إتاحة هذا الكتاب قريباً', close: 'حسناً' },
+          en: { read: 'Read',   download: 'Download', comingSoon: 'Soon', hint: 'This book will be available soon', close: 'OK' },
+        };
+        return extra[lang][key];
+      }
+
+      function render() {
+        const grid = document.getElementById('books-grid');
+        const lang = App.getCurrentLang();
+        const isAr = lang === 'ar';
+
+        grid.innerHTML = books.map(b => {
+          const cat = isAr ? b.cat_ar : b.cat_en;
+          const title = isAr ? b.title_ar : b.title_en;
+          const isReady = !!b.file;
+          const btnClass = isReady ? '' : 'btn-coming-soon';
+          const downloadLabel = isReady ? getT('download') : getT('comingSoon');
+
+          return `
+            <div class="book-card">
+              <div class="book-cover" data-color="${b.color}">
+                <svg class="book-cover-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  ${icons[b.icon]}
+                </svg>
+                <div class="book-cover-label">${cat}</div>
+              </div>
+              <span class="book-cat-badge">${cat}</span>
+              <div class="book-title">${title}</div>
+              <div class="book-meta">PDF · ${isAr ? 'قسم تقنيات الحاسوب' : 'Computer Tech Dept.'}</div>
+
+              <div class="book-actions">
+                <button class="book-action-btn btn-read ${btnClass}" data-book="${b.id}" data-action="read">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  <span>${isReady ? getT('read') : getT('comingSoon')}</span>
+                </button>
+
+                <button class="book-action-btn btn-download ${btnClass}" data-book="${b.id}" data-action="download">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>${downloadLabel}</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // ربط الأزرار
+        grid.querySelectorAll('.book-action-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const bookId = btn.dataset.book;
+            const action = btn.dataset.action;
+            const book = books.find(b => b.id === bookId);
+
+            if (App) App.playSound('tick');
+
+            if (!book.file) {
+              Swal.fire({
+                icon: 'info',
+                title: getT('comingSoon'),
+                text: getT('hint'),
+                confirmButtonText: getT('close'),
+                background: 'rgba(12, 10, 9, 0.95)',
+                color: '#e7e5e4',
+                didOpen: (popup) => {
+                  popup.style.fontFamily = 'Cairo, sans-serif';
+                  popup.style.borderRadius = '24px';
+                  popup.style.border = '1px solid rgba(251, 191, 36, 0.2)';
+                }
+              });
+              return;
+            }
+
+            if (action === 'read') {
+              window.open(book.file, '_blank');
+            } else if (action === 'download') {
+              const link = document.createElement('a');
+              link.href = book.file;
+              link.download = (isAr ? book.title_ar : book.title_en) + '.pdf';
+              link.click();
+            }
+          });
+        });
+
+        // ===== حركات GSAP =====
+        if (window.gsap) {
+          gsap.set('.book-card', { opacity: 0, y: 40, scale: 0.95 });
+
+          gsap.to('.book-card', {
+            opacity: 1, y: 0, scale: 1,
+            duration: 0.6,
+            stagger: 0.07,
+            ease: 'power3.out',
+            onComplete: () => {
+              document.querySelectorAll('.book-card').forEach(el => {
+                el.style.opacity = '';
+                el.style.transform = '';
+              });
+            }
+          });
+        }
+
+        App.setupCardTilt();
+      }
+
+      render();
+      document.addEventListener('madrasati:language-changed', render);
+    });
+  </script>
+</body>
+</html>

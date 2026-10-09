@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>المطور الرسمي | Anas Hussein</title>
+
+  <script src="libs/tailwind.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { cairo: ['Cairo', 'sans-serif'], mono: ['Courier New', 'monospace'] } } } };
+  </script>
+
+  <script src="libs/gsap.min.js"></script>
+
+  <style>
+    :root {
+      --matrix-green: #00ff41;
+      --matrix-dark: #008f11;
+      --cyber-cyan: #00d9ff;
+      --alert-red: #ff0040;
+    }
+
+    * { -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0; background: #000; color: #d4d4d4;
+      font-family: 'Cairo', sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+
+    ::selection { background: var(--matrix-green); color: #000; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0f0a; }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(to bottom, var(--matrix-green), var(--matrix-dark));
+      border-radius: 999px;
+    }
+
+    #matrix-canvas {
+      position: fixed; inset: 0; z-index: 1;
+      pointer-events: none; transition: opacity 2s ease;
+    }
+    body.intro-done #matrix-canvas { opacity: 0.06; }
+
+    #intro-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; opacity: 1;
+      transition: opacity 0.8s ease;
+    }
+    body.intro-done #intro-overlay { opacity: 0; pointer-events: none; }
+
+    .scanlines {
+      position: fixed; inset: 0; pointer-events: none; z-index: 10000;
+      background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 3px);
+      mix-blend-mode: overlay; opacity: 0.5;
+    }
+
+    .vignette {
+      position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
+    }
+
+    .top-control-btn {
+      position: fixed; top: 20px; z-index: 10001;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid var(--matrix-green);
+      color: var(--matrix-green);
+      font-family: 'Courier New', monospace;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+      border-radius: 6px; cursor: pointer;
+      transition: all 0.3s ease; backdrop-filter: blur(10px);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .top-control-btn:hover {
+      background: var(--matrix-green); color: #000;
+      box-shadow: 0 0 25px var(--matrix-green);
+    }
+    .top-control-btn svg { width: 14px; height: 14px; }
+
+    #skip-btn { inset-inline-end: 20px; }
+    #sound-btn { inset-inline-start: 20px; }
+    #sound-btn.muted { border-color: #666; color: #666; }
+    #sound-btn.muted:hover { background: #666; box-shadow: 0 0 25px #666; }
+
+    body.intro-done #skip-btn { display: none; }
+
+    #flag-stage {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; opacity: 0;
+    }
+
+    .flag-wrap {
+      position: relative;
+      width: 88vw; max-width: 1000px;
+      aspect-ratio: 3 / 2;
+      filter: drop-shadow(0 0 60px rgba(0, 255, 65, 0.7));
+      will-change: filter, transform;
+    }
+
+    .flag-svg { width: 100%; height: 100%; display: block; }
+
+    .flag-glitch-r, .flag-glitch-c {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      mix-blend-mode: screen;
+      pointer-events: none; opacity: 0;
+    }
+    .flag-glitch-r { filter: drop-shadow(0 0 25px red); }
+    .flag-glitch-c { filter: drop-shadow(0 0 25px cyan); }
+
+    .flag-cyber-overlay {
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden;
+    }
+    .flag-cyber-overlay::before {
+      content: '';
+      position: absolute; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--matrix-green), transparent);
+      box-shadow: 0 0 25px var(--matrix-green), 0 0 50px var(--matrix-green);
+      animation: scan-line 2.2s linear infinite;
+    }
+    @keyframes scan-line {
+      0%   { top: 0%; opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    .flag-cyber-overlay::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 255, 65, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 65, 0.12) 1px, transparent 1px);
+      background-size: 35px 35px;
+      opacity: 0.45;
+    }
+
+    .flag-text {
+      position: absolute;
+      font-family: 'Courier New', monospace;
+      font-weight: 700; font-size: 14px;
+      color: var(--matrix-green);
+      text-shadow: 0 0 12px var(--matrix-green);
+      pointer-events: none; white-space: nowrap;
+      opacity: 0; letter-spacing: 0.12em;
+    }
+    .flag-text.tl { top: -42px; inset-inline-start: 0; }
+    .flag-text.tr { top: -42px; inset-inline-end: 0; }
+    .flag-text.bl { bottom: -42px; inset-inline-start: 0; color: var(--alert-red); text-shadow: 0 0 12px var(--alert-red); }
+    .flag-text.br { bottom: -42px; inset-inline-end: 0; }
+
+    #name-stage {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 200; opacity: 0; padding: 20px;
+    }
+
+    .name-terminal-tag {
+      font-family: 'Courier New', monospace;
+      font-size: 14px; color: var(--matrix-green);
+      margin-bottom: 20px; letter-spacing: 0.15em;
+      text-shadow: 0 0 10px var(--matrix-green);
+      opacity: 0;
+    }
+
+    .name-display {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 900; color: #ffffff;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em; text-align: center;
+      text-shadow:
+        0 0 10px rgba(0, 255, 65, 0.8),
+        0 0 30px rgba(0, 255, 65, 0.5),
+        0 0 60px rgba(0, 255, 65, 0.3);
+      line-height: 1.1; margin: 0; min-height: 1.1em;
+    }
+
+    .name-cursor {
+      display: inline-block;
+      width: 4px; height: 0.9em;
+      background: var(--matrix-green);
+      vertical-align: middle;
+      margin-inline-start: 6px;
+      animation: cursor-blink 0.7s steps(1) infinite;
+      box-shadow: 0 0 15px var(--matrix-green);
+    }
+    @keyframes cursor-blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .name-subtitle {
+      font-family: 'Courier New', monospace;
+      font-size: clamp(0.75rem, 2vw, 0.95rem);
+      color: var(--cyber-cyan);
+      letter-spacing: 0.25em;
+      margin-top: 24px; text-align: center;
+      text-shadow: 0 0 10px rgba(0, 217, 255, 0.6);
+      opacity: 0; font-weight: 700; line-height: 1.8;
+    }
+
+    #main-page {
+      position: relative; z-index: 10;
+      opacity: 0; display: none;
+      transition: opacity 0.8s ease;
+    }
+
+    .dev-topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+      padding: 14px 20px;
+    }
+    .dev-topbar-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .dev-topbar-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Courier New', monospace;
+      font-weight: 700; font-size: 13px;
+      color: var(--matrix-green);
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+      letter-spacing: 0.1em;
+    }
+    .dev-topbar-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--matrix-green);
+      box-shadow: 0 0 12px var(--matrix-green);
+      animation: dot-blink 1.5s ease-in-out infinite;
+    }
+    @keyframes dot-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .dev-back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid rgba(0, 255, 65, 0.4);
+      color: var(--matrix-green);
+      font-family: 'Courier New', monospace;
+      font-size: 12px; font-weight: 700;
+      border-radius: 6px; cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      letter-spacing: 0.05em;
+    }
+    .dev-back-btn:hover {
+      background: var(--matrix-green); color: #000;
+      box-shadow: 0 0 25px rgba(0, 255, 65, 0.6);
+    }
+
+    .dev-container {
+      max-width: 1100px; margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .dev-hero {
+      position: relative;
+      border: 1px solid rgba(0, 255, 65, 0.3);
+      border-radius: 24px;
+      padding: 44px 36px;
+      background: linear-gradient(135deg, rgba(0, 255, 65, 0.04) 0%, rgba(0, 217, 255, 0.02) 100%);
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0, 255, 65, 0.1), inset 0 1px 0 rgba(0, 255, 65, 0.1);
+    }
+    .dev-hero::before {
+      content: '';
+      position: absolute;
+      top: -100px; inset-inline-end: -100px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(0, 255, 65, 0.15) 0%, transparent 70%);
+      filter: blur(60px); pointer-events: none;
+    }
+    .dev-hero-content {
+      position: relative; z-index: 2;
+      display: flex; gap: 32px;
+      align-items: center; flex-wrap: wrap;
+    }
+
+    .dev-avatar {
+      width: 130px; height: 130px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #00ff41 0%, #008f11 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Courier New', monospace;
+      font-size: 60px; font-weight: 900; color: #000;
+      box-shadow: 0 0 40px rgba(0, 255, 65, 0.5), inset 0 0 0 3px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0; position: relative; overflow: hidden;
+    }
+    .dev-avatar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: avatar-scan 3s ease-in-out infinite;
+    }
+    @keyframes avatar-scan {
+      0%, 100% { left: -100%; }
+      50% { left: 100%; }
+    }
+    .dev-avatar-badge {
+      position: absolute;
+      bottom: -8px; inset-inline-end: -8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #00ff41; color: #000;
+      font-size: 9px; font-weight: 900;
+      letter-spacing: 0.1em;
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.8);
+      animation: badge-pulse-green 1.8s ease-in-out infinite;
+      z-index: 3;
+    }
+    @keyframes badge-pulse-green {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .dev-hero-info { flex: 1; min-width: 260px; }
+
+    .dev-name {
+      font-family: 'Courier New', monospace;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 900; color: #ffffff;
+      letter-spacing: 0.02em; line-height: 1.1;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.6), 0 0 30px rgba(0, 255, 65, 0.3);
+      margin: 0 0 12px;
+    }
+    .dev-tags {
+      display: flex; flex-wrap: wrap;
+      gap: 8px; margin-top: 14px;
+    }
+    .dev-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em;
+      background: rgba(0, 255, 65, 0.08);
+      border: 1px solid rgba(0, 255, 65, 0.35);
+      color: var(--matrix-green);
+      transition: all 0.3s ease;
+    }
+    .dev-tag:hover { background: rgba(0, 255, 65, 0.15); box-shadow: 0 0 20px rgba(0, 255, 65, 0.3); }
+    .dev-tag.cyan { color: var(--cyber-cyan); border-color: rgba(0, 217, 255, 0.4); background: rgba(0, 217, 255, 0.08); }
+    .dev-tag.red { color: var(--alert-red); border-color: rgba(255, 0, 64, 0.4); background: rgba(255, 0, 64, 0.08); }
+    .dev-tag.palestine { color: #ffffff; border-color: rgba(255, 255, 255, 0.4); background: linear-gradient(90deg, rgba(0, 0, 0, 0.4), rgba(0, 122, 61, 0.2)); }
+
+    .section-head {
+      display: flex; align-items: center; gap: 12px;
+      margin: 48px 0 24px;
+    }
+    .section-head-prefix {
+      font-family: 'Courier New', monospace;
+      font-size: 14px; color: var(--matrix-green);
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+    }
+    .section-head-title {
+      font-size: 22px; font-weight: 900;
+      color: #ffffff; letter-spacing: 0.02em;
+    }
+    .section-head-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(to left, transparent, rgba(0, 255, 65, 0.5), transparent);
+    }
+
+    .terminal-window {
+      background: #0a0f0a;
+      border: 1px solid rgba(0, 255, 65, 0.35);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 255, 65, 0.1);
+    }
+    .terminal-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      background: rgba(0, 255, 65, 0.05);
+      border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27c93f; }
+    .terminal-title {
+      margin-inline-start: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 11px; color: rgba(0, 255, 65, 0.7);
+      letter-spacing: 0.05em;
+    }
+    .terminal-body {
+      padding: 20px 22px;
+      font-family: 'Courier New', monospace;
+      font-size: 13.5px; line-height: 1.9;
+      color: #c8e6c9;
+      direction: ltr; text-align: left;
+      min-height: 340px; max-height: 500px;
+      overflow-y: auto;
+    }
+    .terminal-line { white-space: pre-wrap; word-break: break-word; }
+    .t-prompt { color: var(--matrix-green); }
+    .t-path { color: var(--cyber-cyan); }
+    .t-cmd { color: #ffffff; }
+    .t-key { color: var(--cyber-cyan); }
+    .t-value { color: var(--matrix-green); }
+    .t-warn { color: var(--alert-red); }
+    .t-cursor {
+      display: inline-block;
+      width: 8px; height: 14px;
+      background: var(--matrix-green);
+      animation: cursor-blink 0.7s steps(1) infinite;
+      vertical-align: middle; margin-inline-start: 4px;
+      box-shadow: 0 0 10px var(--matrix-green);
+    }
+
+    .skill-item { margin-bottom: 20px; }
+    .skill-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 8px;
+      font-family: 'Courier New', monospace;
+    }
+    .skill-name { font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: 0.05em; }
+    .skill-percent {
+      font-size: 12px; font-weight: 800;
+      color: var(--matrix-green);
+      text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+    }
+    .skill-bar {
+      height: 10px; border-radius: 999px;
+      background: rgba(0, 255, 65, 0.08);
+      border: 1px solid rgba(0, 255, 65, 0.2);
+      overflow: hidden; position: relative;
+    }
+    .skill-bar-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(to left, #00ff41, #00d9ff, #00ff41);
+      background-size: 200% 100%;
+      border-radius: 999px;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.6);
+      animation: skill-shimmer 2.5s linear infinite;
+      position: relative;
+    }
+    @keyframes skill-shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    .skill-bar-fill::after {
+      content: '';
+      position: absolute; top: 0; inset-inline-end: 0;
+      width: 4px; height: 100%;
+      background: #ffffff;
+      box-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41;
+      border-radius: 999px;
+    }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .stat-card {
+      position: relative; padding: 24px 16px;
+      border-radius: 16px;
+      background: rgba(0, 255, 65, 0.03);
+      border: 1px solid rgba(0, 255, 65, 0.2);
+      text-align: center;
+      transition: all 0.35s ease; overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(to left, transparent, #00ff41, transparent);
+      opacity: 0.6;
+    }
+    .stat-card:hover {
+      border-color: rgba(0, 255, 65, 0.5);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 255, 65, 0.15);
+    }
+    .stat-value {
+      font-family: 'Courier New', monospace;
+      font-size: 32px; font-weight: 900;
+      color: var(--matrix-green);
+      text-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+      font-variant-numeric: tabular-nums;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.15em;
+      color: #78716c; text-transform: uppercase;
+    }
+
+    /* ============================================================
+       🎙️ Voice Player
+       ============================================================ */
+    .voice-player {
+      position: relative;
+      border: 1px solid rgba(0, 255, 65, 0.35);
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(0, 255, 65, 0.05) 0%, rgba(0, 217, 255, 0.02) 100%);
+      padding: 28px 24px;
+      overflow: hidden;
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 50px rgba(0, 255, 65, 0.12);
+    }
+    .voice-player::before {
+      content: '';
+      position: absolute;
+      top: -80px; inset-inline-end: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(0, 255, 65, 0.15) 0%, transparent 70%);
+      filter: blur(50px);
+      pointer-events: none;
+    }
+
+    .voice-player-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .voice-mic-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: rgba(0, 255, 65, 0.12);
+      border: 1px solid rgba(0, 255, 65, 0.35);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--matrix-green);
+      flex-shrink: 0;
+    }
+    .voice-mic-icon svg { width: 22px; height: 22px; }
+
+    .voice-title {
+      flex: 1; min-width: 0;
+    }
+    .voice-title-main {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+    .voice-title-sub {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(0, 255, 65, 0.7);
+      letter-spacing: 0.15em;
+    }
+
+    /* Visualizer */
+    .voice-visualizer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      height: 70px;
+      margin: 20px 0 18px;
+      padding: 0 8px;
+      position: relative;
+      z-index: 2;
+    }
+    .voice-bar {
+      flex: 1;
+      max-width: 8px;
+      min-width: 3px;
+      background: linear-gradient(to top, #00ff41, #00d9ff);
+      border-radius: 999px;
+      transition: height 0.08s ease-out;
+      box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+      height: 4px;
+    }
+    .voice-player.playing .voice-bar {
+      /* الأنميشن سيعمل بـ JS */
+    }
+    .voice-player.playing .voice-bar {
+      animation: bar-pulse 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes bar-pulse {
+      0%   { height: 8px; }
+      100% { height: 55px; }
+    }
+    /* تنويع التأخير */
+    .voice-bar:nth-child(1)  { animation-delay: 0.00s; }
+    .voice-bar:nth-child(2)  { animation-delay: 0.05s; }
+    .voice-bar:nth-child(3)  { animation-delay: 0.10s; }
+    .voice-bar:nth-child(4)  { animation-delay: 0.15s; }
+    .voice-bar:nth-child(5)  { animation-delay: 0.20s; }
+    .voice-bar:nth-child(6)  { animation-delay: 0.25s; }
+    .voice-bar:nth-child(7)  { animation-delay: 0.30s; }
+    .voice-bar:nth-child(8)  { animation-delay: 0.35s; }
+    .voice-bar:nth-child(9)  { animation-delay: 0.40s; }
+    .voice-bar:nth-child(10) { animation-delay: 0.45s; }
+    .voice-bar:nth-child(11) { animation-delay: 0.50s; }
+    .voice-bar:nth-child(12) { animation-delay: 0.55s; }
+    .voice-bar:nth-child(13) { animation-delay: 0.50s; }
+    .voice-bar:nth-child(14) { animation-delay: 0.45s; }
+    .voice-bar:nth-child(15) { animation-delay: 0.40s; }
+    .voice-bar:nth-child(16) { animation-delay: 0.35s; }
+    .voice-bar:nth-child(17) { animation-delay: 0.30s; }
+    .voice-bar:nth-child(18) { animation-delay: 0.25s; }
+    .voice-bar:nth-child(19) { animation-delay: 0.20s; }
+    .voice-bar:nth-child(20) { animation-delay: 0.15s; }
+
+    /* Controls */
+    .voice-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .voice-play-btn {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00ff41 0%, #008f11 100%);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #000;
+      box-shadow:
+        0 0 30px rgba(0, 255, 65, 0.5),
+        inset 0 0 0 3px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .voice-play-btn::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 255, 65, 0.4);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .voice-play-btn:hover {
+      transform: scale(1.08);
+      box-shadow:
+        0 0 45px rgba(0, 255, 65, 0.8),
+        inset 0 0 0 3px rgba(0, 0, 0, 0.2);
+    }
+    .voice-play-btn:hover::before {
+      opacity: 1;
+      inset: -10px;
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.9); opacity: 0.7; }
+      100% { transform: scale(1.2); opacity: 0; }
+    }
+    .voice-play-btn svg {
+      width: 26px; height: 26px;
+      fill: #000;
+      position: relative;
+      z-index: 2;
+    }
+    .voice-play-btn .play-icon,
+    .voice-play-btn .pause-icon {
+      transition: opacity 0.2s ease;
+    }
+    .voice-play-btn .pause-icon { display: none; }
+    .voice-player.playing .voice-play-btn .play-icon { display: none; }
+    .voice-player.playing .voice-play-btn .pause-icon { display: block; }
+
+    /* Progress */
+    .voice-progress-wrap {
+      flex: 1; min-width: 0;
+    }
+    .voice-progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(0, 255, 65, 0.7);
+      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+    }
+    .voice-progress-track {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(0, 255, 65, 0.1);
+      border: 1px solid rgba(0, 255, 65, 0.2);
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+    .voice-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #00ff41, #00d9ff);
+      border-radius: 999px;
+      box-shadow: 0 0 12px rgba(0, 255, 65, 0.7);
+      transition: width 0.15s linear;
+      position: relative;
+    }
+    .voice-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 50%; inset-inline-end: -3px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #00ff41;
+      transform: translateY(-50%);
+      box-shadow: 0 0 15px #00ff41, 0 0 30px #00ff41;
+    }
+
+    /* Hint */
+    .voice-hint {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px dashed rgba(0, 255, 65, 0.2);
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: rgba(0, 255, 65, 0.6);
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      z-index: 2;
+      line-height: 1.7;
+    }
+    .voice-hint svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* Contact */
+    .contact-grid {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 640px) { .contact-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .contact-card {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px; border-radius: 16px;
+      background: rgba(0, 255, 65, 0.04);
+      border: 1px solid rgba(0, 255, 65, 0.25);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      position: relative; overflow: hidden;
+      min-height: 90px; box-sizing: border-box;
+    }
+    .contact-card:hover {
+      border-color: var(--matrix-green);
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(0, 255, 65, 0.25);
+      background: rgba(0, 255, 65, 0.08);
+    }
+    .contact-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: rgba(0, 255, 65, 0.15);
+      border: 1px solid rgba(0, 255, 65, 0.3);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--matrix-green);
+    }
+    .contact-icon svg {
+      width: 24px; height: 24px;
+      stroke: currentColor; stroke-width: 2; fill: none;
+    }
+    .contact-info {
+      min-width: 0; flex: 1;
+      display: flex; flex-direction: column;
+      justify-content: center; gap: 4px;
+    }
+    .contact-label {
+      font-family: 'Courier New', monospace;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.15em;
+      color: #78716c; text-transform: uppercase;
+    }
+    .contact-value {
+      font-family: 'Courier New', monospace;
+      font-size: 15px; font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+      line-height: 1.4; word-break: break-all;
+    }
+    .contact-value.cyan { color: var(--cyber-cyan); text-shadow: 0 0 10px rgba(0, 217, 255, 0.5); }
+    .contact-value.red { color: var(--alert-red); text-shadow: 0 0 10px rgba(255, 0, 64, 0.5); }
+
+    .dev-footer {
+      margin-top: 60px; padding-top: 30px;
+      border-top: 1px solid rgba(0, 255, 65, 0.15);
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 12px; color: #57534e;
+      line-height: 2; letter-spacing: 0.05em;
+    }
+    .dev-footer .accent { color: var(--matrix-green); text-shadow: 0 0 8px rgba(0, 255, 65, 0.5); }
+    .dev-footer .heart { color: var(--alert-red); }
+
+    #sound-hint {
+      position: fixed;
+      bottom: 30px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 10002;
+      padding: 12px 24px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid var(--matrix-green);
+      color: var(--matrix-green);
+      font-family: 'Courier New', monospace;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.08em;
+      border-radius: 10px;
+      display: flex; align-items: center; gap: 10px;
+      opacity: 0;
+      transition: all 0.5s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+      cursor: pointer; user-select: none;
+    }
+    #sound-hint.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #sound-hint svg { width: 18px; height: 18px; animation: hint-pulse 1.5s ease-in-out infinite; }
+    @keyframes hint-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    @media (max-width: 640px) {
+      .flag-wrap { width: 92vw; max-width: 95vw; }
+      .dev-hero { padding: 28px 22px; }
+      .dev-hero-content { gap: 20px; }
+      .dev-avatar { width: 100px; height: 100px; font-size: 46px; }
+      .terminal-body { font-size: 11.5px; padding: 16px; min-height: 300px; }
+      .section-head-title { font-size: 18px; }
+      .top-control-btn { font-size: 10px; padding: 8px 14px; }
+      #sound-hint { font-size: 11px; padding: 10px 18px; }
+      .voice-player { padding: 22px 18px; }
+      .voice-play-btn { width: 52px; height: 52px; }
+      .voice-play-btn svg { width: 22px; height: 22px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flag-cyber-overlay::before,
+      .dev-avatar::after,
+      .skill-bar-fill,
+      .t-cursor,
+      .name-cursor,
+      .voice-player.playing .voice-bar { animation: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="matrix-canvas"></canvas>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <button id="skip-btn" class="top-control-btn" type="button" aria-label="تخطي المقدمة">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+    </svg>
+    <span>SKIP</span>
+  </button>
+
+  <button id="sound-btn" class="top-control-btn" type="button" aria-label="الصوت">
+    <svg id="sound-icon-on" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+    </svg>
+    <svg id="sound-icon-off" style="display:none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l4-4m0 4l-4-4" />
+    </svg>
+    <span id="sound-label">SOUND</span>
+  </button>
+
+  <div id="sound-hint">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+    </svg>
+    <span>انقر لتفعيل الصوت 🔊</span>
+  </div>
+
+  <div id="intro-overlay">
+
+    <div id="flag-stage">
+      <div class="flag-wrap">
+        <svg class="flag-svg" viewBox="0 0 300 200" preserveAspectRatio="xMidYMid meet">
+          <rect width="300" height="66.67" fill="#000000"/>
+          <rect y="66.67" width="300" height="66.67" fill="#ffffff"/>
+          <rect y="133.33" width="300" height="66.67" fill="#007a3d"/>
+          <polygon points="0,0 100,100 0,200" fill="#ce1126"/>
+        </svg>
+
+        <svg class="flag-glitch-r" viewBox="0 0 300 200" preserveAspectRatio="xMidYMid meet">
+          <rect width="300" height="66.67" fill="#ff0000"/>
+          <rect y="66.67" width="300" height="66.67" fill="#ff0000"/>
+          <rect y="133.33" width="300" height="66.67" fill="#ff0000"/>
+          <polygon points="0,0 100,100 0,200" fill="#ff0000"/>
+        </svg>
+        <svg class="flag-glitch-c" viewBox="0 0 300 200" preserveAspectRatio="xMidYMid meet">
+          <rect width="300" height="66.67" fill="#00ffff"/>
+          <rect y="66.67" width="300" height="66.67" fill="#00ffff"/>
+          <rect y="133.33" width="300" height="66.67" fill="#00ffff"/>
+          <polygon points="0,0 100,100 0,200" fill="#00ffff"/>
+        </svg>
+
+        <div class="flag-cyber-overlay"></div>
+
+        <div class="flag-text tl" id="flag-text-tl">// SECURE_CONNECTION</div>
+        <div class="flag-text tr" id="flag-text-tr">[ PALESTINE ]</div>
+        <div class="flag-text bl" id="flag-text-bl">$ sudo access granted</div>
+        <div class="flag-text br" id="flag-text-br">root@anas:~#</div>
+      </div>
+    </div>
+
+    <div id="name-stage">
+      <div class="name-terminal-tag" id="name-tag">[ IDENTITY CONFIRMED ]</div>
+      <h1 class="name-display">
+        <span id="typed-name"></span><span class="name-cursor" id="name-cursor" style="display:none;"></span>
+      </h1>
+      <p class="name-subtitle" id="name-subtitle">
+        PALESTINIAN · CYBERSECURITY · KALI LINUX
+      </p>
+    </div>
+
+  </div>
+
+  <div id="main-page">
+
+    <div class="dev-topbar">
+      <div class="dev-topbar-inner">
+        <div class="dev-topbar-brand">
+          <span class="dev-topbar-dot"></span>
+          <span>root@anas:~# developer.profile</span>
+        </div>
+        <a href="student.html" class="dev-back-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          <span>عودة</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="dev-container">
+
+      <section class="dev-hero">
+        <div class="dev-hero-content">
+          <div class="dev-avatar">
+            A
+            <span class="dev-avatar-badge">DEV</span>
+          </div>
+          <div class="dev-hero-info">
+            <h2 class="dev-name">Anas Hussein</h2>
+            <div class="dev-tags">
+              <span class="dev-tag palestine">🇵🇸 فلسطيني</span>
+              <span class="dev-tag">🔐 أمن سيبراني</span>
+              <span class="dev-tag cyan">🐉 Kali Linux</span>
+              <span class="dev-tag red">⚡ 4 لغات برمجة</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-head">
+        <span class="section-head-prefix">$</span>
+        <h3 class="section-head-title">طرفية النظام</h3>
+        <span class="section-head-line"></span>
+      </div>
+
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">anas@kali: ~/profile</span>
+        </div>
+        <div class="terminal-body" id="terminal-body"></div>
+      </div>
+
+      <div class="section-head">
+        <span class="section-head-prefix">$</span>
+        <h3 class="section-head-title">المهارات التقنية</h3>
+        <span class="section-head-line"></span>
+      </div>
+
+      <div class="terminal-window" style="padding: 28px 24px;">
+        <div id="skills-list"></div>
+      </div>
+
+      <div class="section-head">
+        <span class="section-head-prefix">$</span>
+        <h3 class="section-head-title">الأرقام تتكلم</h3>
+        <span class="section-head-line"></span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" data-count="4">0</div>
+          <div class="stat-label">لغات برمجة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" data-count="5">0</div>
+          <div class="stat-label">مشاريع</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" data-count="500" data-suffix="+">0</div>
+          <div class="stat-label">ساعة تعلم</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" data-count="100" data-suffix="%">0</div>
+          <div class="stat-label">شغف</div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           🎙️ رسالة صوتية للمطور
+           ============================================================ -->
+      <div class="section-head">
+        <span class="section-head-prefix">$</span>
+        <h3 class="section-head-title">🎙️ رسالة للمطور</h3>
+        <span class="section-head-line"></span>
+      </div>
+
+      <div class="voice-player" id="voice-player">
+
+        <!-- Header -->
+        <div class="voice-player-header">
+          <div class="voice-mic-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-14 0m7 8v3m-5 0h10m-5-14a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <div class="voice-title">
+            <div class="voice-title-main">رسالة صوتية تشجيعية</div>
+            <div class="voice-title-sub">// STUDENT_ENCOURAGEMENT.MP3</div>
+          </div>
+        </div>
+
+        <!-- Visualizer -->
+        <div class="voice-visualizer" aria-hidden="true">
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+        </div>
+
+        <!-- Controls -->
+        <div class="voice-controls">
+          <button type="button" class="voice-play-btn" id="voice-play-btn" aria-label="تشغيل الرسالة">
+            <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg class="pause-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+            </svg>
+          </button>
+
+          <div class="voice-progress-wrap">
+            <div class="voice-progress-info">
+              <span id="voice-current">00:00</span>
+              <span id="voice-duration">--:--</span>
+            </div>
+            <div class="voice-progress-track" id="voice-progress-track">
+              <div class="voice-progress-fill" id="voice-progress-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hint -->
+        <div class="voice-hint">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>رسالة شخصية من المطور لجميع الطلاب — استمع إليها كاملة 💚</span>
+        </div>
+
+        <!-- Audio Element (hidden) -->
+        <audio id="voice-audio" preload="metadata" src="audio/message.mp3"></audio>
+
+      </div>
+
+      <div class="section-head">
+        <span class="section-head-prefix">$</span>
+        <h3 class="section-head-title">تواصل معي</h3>
+        <span class="section-head-line"></span>
+      </div>
+
+      <div class="contact-grid">
+        <a href="tel:0939212797" class="contact-card">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <div class="contact-info">
+            <div class="contact-label">Phone</div>
+            <div class="contact-value">0939 212 797</div>
+          </div>
+        </a>
+
+        <a href="https://instagram.com/anas7.10.2023" target="_blank" rel="noopener noreferrer" class="contact-card">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+          </div>
+          <div class="contact-info">
+            <div class="contact-label">Instagram</div>
+            <div class="contact-value cyan">@anas7.10.2023</div>
+          </div>
+        </a>
+
+        <div class="contact-card">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div class="contact-info">
+            <div class="contact-label">Location</div>
+            <div class="contact-value red">فلسطين 🇵🇸</div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="dev-footer">
+        <p>
+          <span class="accent">&gt; System.exit(0)</span> · Made with <span class="heart">♥</span> by <span class="accent">Anas Hussein</span>
+        </p>
+        <p style="opacity: 0.6;">© 2026 · All rights reserved · Madrasati Project</p>
+      </footer>
+
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // 🎵 Cyber Sound Engine
+    // ============================================================
+    const CyberSound = (function () {
+      let audioCtx = null;
+      let soundEnabled = localStorage.getItem('dev-sound') !== 'off';
+
+      function getCtx() {
+        if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+          catch (e) { return null; }
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        return audioCtx;
+      }
+
+      function tone(freq, duration, volume, type, delay) {
+        if (!soundEnabled) return;
+        const c = getCtx(); if (!c) return;
+        type = type || 'sine'; delay = delay || 0;
+        const osc = c.createOscillator(); const gain = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+        gain.gain.setValueAtTime(volume, c.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + duration);
+        osc.connect(gain).connect(c.destination);
+        osc.start(c.currentTime + delay);
+        osc.stop(c.currentTime + delay + duration + 0.05);
+      }
+
+      function glide(from, to, duration, volume, type, delay) {
+        if (!soundEnabled) return;
+        const c = getCtx(); if (!c) return;
+        type = type || 'sine'; delay = delay || 0;
+        const osc = c.createOscillator(); const gain = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(from, c.currentTime + delay);
+        osc.frequency.exponentialRampToValueAtTime(to, c.currentTime + delay + duration);
+        gain.gain.setValueAtTime(volume, c.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + duration);
+        osc.connect(gain).connect(c.destination);
+        osc.start(c.currentTime + delay);
+        osc.stop(c.currentTime + delay + duration + 0.05);
+      }
+
+      function noise(duration, volume, cutoffFrom, cutoffTo, delay) {
+        if (!soundEnabled) return;
+        const c = getCtx(); if (!c) return;
+        delay = delay || 0;
+        const bufSize = Math.floor(c.sampleRate * duration);
+        const buf = c.createBuffer(1, bufSize, c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const src = c.createBufferSource(); src.buffer = buf;
+        const filter = c.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(cutoffFrom, c.currentTime + delay);
+        filter.frequency.exponentialRampToValueAtTime(cutoffTo, c.currentTime + delay + duration);
+        const gain = c.createGain();
+        gain.gain.setValueAtTime(volume, c.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + duration);
+        src.connect(filter).connect(gain).connect(c.destination);
+        src.start(c.currentTime + delay);
+      }
+
+      return {
+        isEnabled: () => soundEnabled,
+        unlock: () => getCtx(),
+        toggle: () => {
+          soundEnabled = !soundEnabled;
+          localStorage.setItem('dev-sound', soundEnabled ? 'on' : 'off');
+          if (soundEnabled) setTimeout(() => {
+            tone(880, 0.15, 0.1, 'sine', 0);
+            tone(1100, 0.15, 0.08, 'sine', 0.08);
+          }, 50);
+          return soundEnabled;
+        },
+        introStart() { tone(55, 1.8, 0.15, 'sine', 0); glide(80, 450, 1.8, 0.04, 'sawtooth', 0); },
+        flagAppear() { noise(1.4, 0.12, 200, 4500, 0); tone(220, 0.8, 0.08, 'sine', 0); tone(110, 1.2, 0.06, 'sine', 0.1); },
+        cameraFocus() { noise(0.04, 0.18, 9000, 2000, 0); noise(0.04, 0.12, 7000, 1500, 0.15); },
+        glitch() { noise(0.08, 0.14, 5000, 400, 0); tone(800, 0.05, 0.05, 'square', 0); tone(1200, 0.04, 0.04, 'square', 0.05); },
+        cyberPulse() { tone(100, 1, 0.18, 'sine', 0); tone(200, 0.5, 0.09, 'triangle', 0.05); tone(400, 0.3, 0.05, 'sine', 0.1); },
+        typeKey() { noise(0.02, 0.05, 5000, 1000, 0); },
+        terminalKey() { tone(1800, 0.015, 0.02, 'square', 0); },
+        success() {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            tone(freq, 0.5, 0.09, 'sine', i * 0.09);
+            tone(freq * 2, 0.3, 0.03, 'triangle', i * 0.09);
+          });
+        },
+        nav() { glide(300, 800, 0.15, 0.05, 'sine', 0); },
+        playVoice() { tone(660, 0.12, 0.08, 'sine', 0); tone(880, 0.12, 0.07, 'sine', 0.06); },
+        pauseVoice() { tone(440, 0.15, 0.07, 'sine', 0); }
+      };
+    })();
+
+    ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, function unlock() {
+        CyberSound.unlock();
+        ['pointerdown', 'keydown', 'touchstart'].forEach(e => document.removeEventListener(e, unlock));
+      }, { once: true });
+    });
+
+    // ============================================================
+    // 🔊 Sound Button
+    // ============================================================
+    (function setupSoundBtn() {
+      const btn = document.getElementById('sound-btn');
+      const iconOn = document.getElementById('sound-icon-on');
+      const iconOff = document.getElementById('sound-icon-off');
+      const label = document.getElementById('sound-label');
+
+      function updateUI() {
+        const on = CyberSound.isEnabled();
+        if (on) {
+          btn.classList.remove('muted');
+          iconOn.style.display = '';
+          iconOff.style.display = 'none';
+          label.textContent = 'SOUND ON';
+        } else {
+          btn.classList.add('muted');
+          iconOn.style.display = 'none';
+          iconOff.style.display = '';
+          label.textContent = 'MUTED';
+        }
+      }
+
+      updateUI();
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        CyberSound.unlock();
+        CyberSound.toggle();
+        updateUI();
+      });
+    })();
+
+    // ============================================================
+    // 💡 Sound Hint
+    // ============================================================
+    (function showSoundHint() {
+      const hint = document.getElementById('sound-hint');
+      if (!hint) return;
+      setTimeout(() => {
+        if (!CyberSound.isEnabled()) return;
+        hint.classList.add('show');
+        const hide = () => { hint.classList.remove('show'); CyberSound.unlock(); };
+        document.addEventListener('pointerdown', hide, { once: true });
+        setTimeout(hide, 6000);
+      }, 800);
+    })();
+
+    // ============================================================
+    // 🌧️ Matrix Rain
+    // ============================================================
+    (function initMatrix() {
+      const canvas = document.getElementById('matrix-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let width, height, columns, drops;
+      const fontSize = 16;
+      const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*()<>{}[]';
+      let active = true, lastFrame = 0;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        columns = Math.ceil(width / fontSize);
+        drops = new Array(columns).fill(1);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.font = fontSize + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+          const char = chars.charAt(Math.floor(Math.random() * chars.length));
+          const x = i * fontSize, y = drops[i] * fontSize;
+          const r = Math.random();
+          if (r > 0.97) { ctx.fillStyle = '#d4ffd4'; ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 15; }
+          else if (r > 0.9) { ctx.fillStyle = '#00ff41'; ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 8; }
+          else { ctx.fillStyle = '#008f11'; ctx.shadowBlur = 0; }
+          ctx.fillText(char, x, y);
+          if (y > height && Math.random() > 0.975) drops[i] = 0;
+          drops[i]++;
+        }
+        ctx.shadowBlur = 0;
+      }
+
+      function loop(ts) {
+        if (!active) return;
+        if (ts - lastFrame > 33) { draw(); lastFrame = ts; }
+        requestAnimationFrame(loop);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { draw(); active = false; }
+      else requestAnimationFrame(loop);
+    })();
+
+    // ============================================================
+    // 🎬 Intro Timeline
+    // ============================================================
+    (function initIntro() {
+      const introOverlay = document.getElementById('intro-overlay');
+      const flagStage = document.getElementById('flag-stage');
+      const nameStage = document.getElementById('name-stage');
+      const flagWrap = document.querySelector('.flag-wrap');
+      const flagGlitchR = document.querySelector('.flag-glitch-r');
+      const flagGlitchC = document.querySelector('.flag-glitch-c');
+      const flagTexts = ['flag-text-tl', 'flag-text-tr', 'flag-text-bl', 'flag-text-br'];
+      const nameTag = document.getElementById('name-tag');
+      const typedName = document.getElementById('typed-name');
+      const nameCursor = document.getElementById('name-cursor');
+      const nameSubtitle = document.getElementById('name-subtitle');
+      const mainPage = document.getElementById('main-page');
+      const skipBtn = document.getElementById('skip-btn');
+
+      let introDone = false;
+
+      function finishIntro() {
+        if (introDone) return;
+        introDone = true;
+        document.body.classList.add('intro-done');
+        introOverlay.style.display = 'none';
+        mainPage.style.display = 'block';
+        requestAnimationFrame(() => {
+          mainPage.style.opacity = '1';
+          playMainAnimations();
+        });
+      }
+
+      function playMainAnimations() {
+        renderTerminal();
+        renderSkills();
+        animateCounters();
+        if (window.gsap) {
+          gsap.from('.dev-hero', { opacity: 0, y: 40, duration: 0.8, ease: 'power3.out' });
+          gsap.from('.section-head', { opacity: 0, x: 30, duration: 0.6, stagger: 0.1, delay: 0.3, ease: 'power2.out' });
+          gsap.from('.terminal-window, .voice-player', { opacity: 0, y: 40, duration: 0.7, delay: 0.5, stagger: 0.15, ease: 'power3.out' });
+          gsap.from('.stat-card', { opacity: 0, y: 30, duration: 0.5, stagger: 0.08, delay: 0.8, ease: 'power2.out' });
+          gsap.from('.contact-card', { opacity: 0, y: 30, duration: 0.5, stagger: 0.1, delay: 1.1, ease: 'power2.out' });
+        }
+      }
+
+      if (!window.gsap) { setTimeout(finishIntro, 500); return; }
+
+      const tl = gsap.timeline({ onComplete: () => setTimeout(finishIntro, 400) });
+
+      gsap.set(flagStage, { opacity: 0 });
+      gsap.set(flagWrap, { scale: 0.5, filter: 'blur(40px) brightness(3)' });
+
+      tl.call(() => CyberSound.introStart());
+      tl.to(flagStage, { opacity: 1, duration: 0.5 })
+        .to(flagWrap, { scale: 1, filter: 'blur(0px) brightness(1)', duration: 1.2, ease: 'power3.out' }, '-=0.2');
+
+      tl.call(() => CyberSound.flagAppear(), null, '-=1.0');
+
+      tl.to(flagWrap, { filter: 'blur(14px) brightness(1.6)', duration: 0.15, ease: 'power2.in' });
+      tl.call(() => CyberSound.cameraFocus());
+      tl.to(flagWrap, { filter: 'blur(0px) brightness(1)', duration: 0.2, ease: 'power2.out' });
+      tl.to(flagWrap, { filter: 'blur(8px) brightness(1.4)', duration: 0.13, ease: 'power2.in' });
+      tl.call(() => CyberSound.cameraFocus());
+      tl.to(flagWrap, { filter: 'blur(0px) brightness(1)', duration: 0.18, ease: 'power2.out' });
+      tl.to(flagWrap, { filter: 'blur(5px) brightness(1.3)', duration: 0.11, ease: 'power2.in' });
+      tl.call(() => CyberSound.cameraFocus());
+      tl.to(flagWrap, { filter: 'blur(0px) brightness(1)', duration: 0.25, ease: 'power2.out' });
+
+      tl.call(() => CyberSound.glitch());
+      tl.to(flagGlitchR, { opacity: 0.85, x: -5, duration: 0.07, repeat: 7, yoyo: true, ease: 'power2.inOut' }, '-=0.2');
+      tl.to(flagGlitchC, { opacity: 0.85, x: 5, duration: 0.07, repeat: 7, yoyo: true, ease: 'power2.inOut' }, '-=0.56');
+      tl.to([flagGlitchR, flagGlitchC], { opacity: 0, duration: 0.3 });
+
+      flagTexts.forEach((id, i) => {
+        tl.to(`#${id}`, { opacity: 1, duration: 0.3 }, `-=${i * 0.05}`);
+      });
+
+      tl.call(() => CyberSound.cyberPulse());
+      tl.to(flagWrap, {
+        scale: 1.06,
+        filter: 'drop-shadow(0 0 80px rgba(0, 255, 65, 1)) brightness(1.1)',
+        duration: 0.35, yoyo: true, repeat: 1, ease: 'power2.inOut',
+      });
+
+      tl.to(flagWrap, { filter: 'blur(6px) brightness(1.4)', duration: 0.3, ease: 'power2.in' }, '+=0.3');
+      tl.to(flagTexts.map(id => `#${id}`), { opacity: 0, duration: 0.3 }, '-=0.3');
+      tl.to(flagWrap, { filter: 'blur(30px) brightness(2.5)', scale: 1.2, opacity: 0, duration: 1.0, ease: 'power2.in' }, '-=0.2');
+      tl.to(flagStage, { opacity: 0, duration: 0.4 }, '-=0.6');
+
+      tl.set(nameStage, { opacity: 0 });
+      tl.to(nameStage, { opacity: 1, duration: 0.3 });
+      tl.to(nameTag, { opacity: 1, duration: 0.4, ease: 'power2.out' });
+      tl.call(() => typeNameWithSound('Anas Hussein', typedName, nameCursor));
+      tl.to(nameSubtitle, { opacity: 1, duration: 0.7, delay: 1.6, ease: 'power2.out' });
+
+      skipBtn.addEventListener('click', () => {
+        CyberSound.nav();
+        tl.kill();
+        finishIntro();
+      });
+    })();
+
+    function typeNameWithSound(text, el, cursor) {
+      if (cursor) cursor.style.display = 'inline-block';
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < text.length) { el.textContent += text.charAt(i); CyberSound.typeKey(); i++; }
+        else clearInterval(interval);
+      }, 85);
+    }
+
+    // ============================================================
+    // 💻 Terminal
+    // ============================================================
+    function renderTerminal() {
+      const terminal = document.getElementById('terminal-body');
+      if (!terminal) return;
+
+      const lines = [
+        { type: 'cmd', prompt: 'root@anas', path: '~', cmd: 'whoami' },
+        { type: 'out', html: '<span class="t-value">anas_hussein</span>' },
+        { type: 'cmd', prompt: 'root@anas', path: '~', cmd: 'cat about.txt' },
+        { type: 'out', html: '<span class="t-key">Name:</span>      <span class="t-value">Anas Hussein</span>' },
+        { type: 'out', html: '<span class="t-key">Country:</span>   <span class="t-value">Palestine 🇵🇸</span>' },
+        { type: 'out', html: '<span class="t-key">Field:</span>     <span class="t-value">Cybersecurity Student</span>' },
+        { type: 'out', html: '<span class="t-key">OS:</span>        <span class="t-value">Kali Linux 🐉</span>' },
+        { type: 'out', html: '<span class="t-key">Focus:</span>     <span class="t-value">Web Development & Security</span>' },
+        { type: 'cmd', prompt: 'root@anas', path: '~', cmd: 'ls skills/' },
+        { type: 'out', html: '<span class="t-value">html_css/  javascript/  csharp/  python/</span>' },
+        { type: 'cmd', prompt: 'root@anas', path: '~', cmd: 'cat projects.count' },
+        { type: 'out', html: '<span class="t-value">5</span> <span class="t-key">projects completed</span>' },
+        { type: 'cmd', prompt: 'root@anas', path: '~', cmd: 'echo $contact' },
+        { type: 'out', html: '<span class="t-value">+963 939 212 797</span>' },
+        { type: 'out', html: '<span class="t-value">@anas7.10.2023</span>' },
+        { type: 'cmd', prompt: 'root@anas', path: '~', cmd: 'sudo access --granted', triggerSuccess: true },
+      ];
+
+      let currentLine = 0;
+
+      function nextLine() {
+        if (currentLine >= lines.length) {
+          const cursorLine = document.createElement('div');
+          cursorLine.className = 'terminal-line';
+          cursorLine.style.marginTop = '8px';
+          cursorLine.innerHTML = '<span class="t-prompt">root@anas</span><span class="t-path">:~#</span> <span class="t-cursor"></span>';
+          terminal.appendChild(cursorLine);
+          return;
+        }
+
+        const line = lines[currentLine];
+        const div = document.createElement('div');
+        div.className = 'terminal-line';
+
+        if (line.type === 'cmd') {
+          div.innerHTML = `<span class="t-prompt">${line.prompt}</span><span class="t-path">:${line.path}#</span> <span class="t-cmd">${line.cmd}</span>`;
+          terminal.appendChild(div);
+          CyberSound.terminalKey();
+
+          if (line.triggerSuccess) {
+            setTimeout(() => {
+              const successLine = document.createElement('div');
+              successLine.className = 'terminal-line';
+              successLine.style.paddingInlineStart = '20px';
+              successLine.innerHTML = '<span class="t-warn">[ ✓ ] </span><span class="t-value">ACCESS GRANTED</span>';
+              terminal.appendChild(successLine);
+              CyberSound.success();
+              terminal.scrollTop = terminal.scrollHeight;
+            }, 400);
+            currentLine++;
+            setTimeout(nextLine, 1400);
+            return;
+          }
+
+          currentLine++;
+          setTimeout(nextLine, 350);
+        } else {
+          div.innerHTML = line.html;
+          div.style.paddingInlineStart = '20px';
+          terminal.appendChild(div);
+          currentLine++;
+          setTimeout(nextLine, 120);
+        }
+
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+
+      setTimeout(nextLine, 800);
+    }
+
+    // ============================================================
+    // ⚡ Skills
+    // ============================================================
+    function renderSkills() {
+      const container = document.getElementById('skills-list');
+      if (!container) return;
+
+      const skills = [
+        { name: 'HTML & CSS',    percent: 95, color: 'linear-gradient(to left, #fb923c, #f97316)' },
+        { name: 'JavaScript',    percent: 88, color: 'linear-gradient(to left, #fbbf24, #f59e0b)' },
+        { name: 'C#',            percent: 75, color: 'linear-gradient(to left, #c084fc, #a855f7)' },
+        { name: 'Python',        percent: 70, color: 'linear-gradient(to left, #60a5fa, #3b82f6)' },
+        { name: 'Linux / Kali',  percent: 80, color: 'linear-gradient(to left, #4ade80, #22c55e)' },
+        { name: 'Cybersecurity', percent: 65, color: 'linear-gradient(to left, #f87171, #ef4444)' },
+      ];
+
+      container.innerHTML = skills.map(s => `
+        <div class="skill-item">
+          <div class="skill-header">
+            <span class="skill-name">${s.name}</span>
+            <span class="skill-percent">${s.percent}%</span>
+          </div>
+          <div class="skill-bar">
+            <div class="skill-bar-fill" data-percent="${s.percent}" style="background: ${s.color}; background-size: 200% 100%;"></div>
+          </div>
+        </div>
+      `).join('');
+
+      setTimeout(() => {
+        container.querySelectorAll('.skill-bar-fill').forEach((bar, i) => {
+          const target = bar.dataset.percent;
+          if (window.gsap) {
+            gsap.to(bar, { width: target + '%', duration: 1.4, delay: 0.15 * i, ease: 'power3.out' });
+          } else {
+            bar.style.width = target + '%';
+            bar.style.transition = 'width 1.4s ease';
+          }
+        });
+      }, 300);
+    }
+
+    // ============================================================
+    // 🔢 Counters
+    // ============================================================
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(el => {
+        const target = parseInt(el.dataset.count);
+        const suffix = el.dataset.suffix || '';
+        const duration = 1500;
+        const start = performance.now();
+        function update(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const value = Math.floor(eased * target);
+          el.textContent = value + suffix;
+          if (progress < 1) requestAnimationFrame(update);
+          else el.textContent = target + suffix;
+        }
+        setTimeout(() => requestAnimationFrame(update), 400);
+      });
+    }
+
+    // ============================================================
+    // 🎙️ Voice Player
+    // ============================================================
+    (function initVoicePlayer() {
+      const player = document.getElementById('voice-player');
+      const audio = document.getElementById('voice-audio');
+      const playBtn = document.getElementById('voice-play-btn');
+      const progressTrack = document.getElementById('voice-progress-track');
+      const progressFill = document.getElementById('voice-progress-fill');
+      const currentTimeEl = document.getElementById('voice-current');
+      const durationEl = document.getElementById('voice-duration');
+
+      if (!player || !audio || !playBtn) return;
+
+      function formatTime(seconds) {
+        if (!isFinite(seconds) || isNaN(seconds)) return '--:--';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      }
+
+      // تحديث المدة عند التحميل
+      audio.addEventListener('loadedmetadata', () => {
+        durationEl.textContent = formatTime(audio.duration);
+      });
+
+      // إذا الملف مفقود
+      audio.addEventListener('error', () => {
+        durationEl.textContent = '--:--';
+        currentTimeEl.textContent = 'خطأ';
+        playBtn.disabled = true;
+        playBtn.style.opacity = '0.4';
+        playBtn.style.cursor = 'not-allowed';
+        playBtn.title = 'ملف الصوت غير موجود';
+      });
+
+      // زر التشغيل
+      playBtn.addEventListener('click', () => {
+        CyberSound.unlock();
+
+        if (audio.paused) {
+          const promise = audio.play();
+          if (promise && promise.catch) {
+            promise.catch(() => {
+              // فشل التشغيل
+              console.warn('فشل تشغيل الصوت');
+            });
+          }
+        } else {
+          audio.pause();
+          CyberSound.pauseVoice();
+        }
+      });
+
+      // تغيّر حالة التشغيل
+      audio.addEventListener('play', () => {
+        player.classList.add('playing');
+        CyberSound.playVoice();
+      });
+
+      audio.addEventListener('pause', () => {
+        player.classList.remove('playing');
+      });
+
+      audio.addEventListener('ended', () => {
+        player.classList.remove('playing');
+        progressFill.style.width = '0%';
+        audio.currentTime = 0;
+        currentTimeEl.textContent = '00:00';
+      });
+
+      // تحديث التقدم
+      audio.addEventListener('timeupdate', () => {
+        if (!audio.duration) return;
+        const percent = (audio.currentTime / audio.duration) * 100;
+        progressFill.style.width = percent + '%';
+        currentTimeEl.textContent = formatTime(audio.currentTime);
+      });
+
+      // النقر على شريط التقدم
+      progressTrack.addEventListener('click', (e) => {
+        if (!audio.duration) return;
+        const rect = progressTrack.getBoundingClientRect();
+        // ملاحظة: الصفحة RTL، فالعرض معكوس
+        const isRTL = document.documentElement.dir === 'rtl';
+        let x = e.clientX - rect.left;
+        if (isRTL) x = rect.width - x;
+        const percent = Math.max(0, Math.min(1, x / rect.width));
+        audio.currentTime = percent * audio.duration;
+      });
+
+      // دعم السحب (dragging)
+      let isDragging = false;
+      progressTrack.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        progressTrack.setPointerCapture(e.pointerId);
+      });
+      progressTrack.addEventListener('pointermove', (e) => {
+        if (!isDragging || !audio.duration) return;
+        const rect = progressTrack.getBoundingClientRect();
+        const isRTL = document.documentElement.dir === 'rtl';
+        let x = e.clientX - rect.left;
+        if (isRTL) x = rect.width - x;
+        const percent = Math.max(0, Math.min(1, x / rect.width));
+        progressFill.style.width = (percent * 100) + '%';
+        currentTimeEl.textContent = formatTime(percent * audio.duration);
+      });
+      progressTrack.addEventListener('pointerup', (e) => {
+        if (!isDragging || !audio.duration) { isDragging = false; return; }
+        const rect = progressTrack.getBoundingClientRect();
+        const isRTL = document.documentElement.dir === 'rtl';
+        let x = e.clientX - rect.left;
+        if (isRTL) x = rect.width - x;
+        const percent = Math.max(0, Math.min(1, x / rect.width));
+        audio.currentTime = percent * audio.duration;
+        isDragging = false;
+      });
+      progressTrack.addEventListener('pointercancel', () => { isDragging = false; });
+
+    })();
+
+  </script>
+</body>
+</html>

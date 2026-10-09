@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الإعلانات | مدرستي</title>
+
+  <script src="libs/tailwind.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { cairo: ['Cairo', 'sans-serif'] } } } };
+  </script>
+
+  <link href="libs/aos.css" rel="stylesheet" />
+  <link href="css/style.css" rel="stylesheet" />
+
+  <style>
+    .announce-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 22px 24px;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      overflow: hidden;
+      display: flex;
+      gap: 18px;
+    }
+    .announce-card::before {
+      content: '';
+      position: absolute;
+      inset-inline-start: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 20px 0 0 20px;
+    }
+    .announce-card[data-color="amber"]::before   { background: linear-gradient(to bottom, #fcd34d, #f59e0b); }
+    .announce-card[data-color="blue"]::before    { background: linear-gradient(to bottom, #60a5fa, #3b82f6); }
+    .announce-card[data-color="emerald"]::before { background: linear-gradient(to bottom, #34d399, #10b981); }
+    .announce-card[data-color="rose"]::before    { background: linear-gradient(to bottom, #fb7185, #f43f5e); }
+    .announce-card[data-color="purple"]::before  { background: linear-gradient(to bottom, #c084fc, #a855f7); }
+    .announce-card[data-color="cyan"]::before    { background: linear-gradient(to bottom, #22d3ee, #06b6d4); }
+    .announce-card[data-color="indigo"]::before  { background: linear-gradient(to bottom, #818cf8, #6366f1); }
+    .announce-card[data-color="slate"]::before   { background: linear-gradient(to bottom, #94a3b8, #64748b); }
+
+    .announce-card:hover {
+      border-color: rgba(251, 191, 36, 0.25);
+      background: rgba(251, 191, 36, 0.03);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 50px rgba(251, 191, 36, 0.12);
+    }
+
+    .announce-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .announce-icon[data-color="amber"]   { background: rgba(251, 191, 36, 0.15); color: #fcd34d; }
+    .announce-icon[data-color="blue"]    { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+    .announce-icon[data-color="emerald"] { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+    .announce-icon[data-color="rose"]    { background: rgba(251, 113, 133, 0.15); color: #fb7185; }
+    .announce-icon[data-color="purple"]  { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
+    .announce-icon[data-color="cyan"]    { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
+    .announce-icon[data-color="indigo"]  { background: rgba(129, 140, 248, 0.15); color: #818cf8; }
+    .announce-icon[data-color="slate"]   { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+    .announce-icon svg { width: 22px; height: 22px; }
+
+    .announce-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #78716c;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+    .announce-date svg { width: 12px; height: 12px; }
+
+    .announce-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .announce-body {
+      font-size: 13px;
+      color: #a8a29e;
+      font-weight: 600;
+      line-height: 1.8;
+    }
+    .announce-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      margin-top: 12px;
+    }
+    .announce-tag[data-color="amber"]   { background: rgba(251, 191, 36, 0.12); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .announce-tag[data-color="blue"]    { background: rgba(96, 165, 250, 0.12); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
+    .announce-tag[data-color="emerald"] { background: rgba(52, 211, 153, 0.12); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+    .announce-tag[data-color="rose"]    { background: rgba(251, 113, 133, 0.12); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.3); }
+    .announce-tag[data-color="purple"]  { background: rgba(192, 132, 252, 0.12); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+    .announce-tag[data-color="cyan"]    { background: rgba(34, 211, 238, 0.12); color: #22d3ee; border: 1px solid rgba(34, 211, 238, 0.3); }
+    .announce-tag[data-color="indigo"]  { background: rgba(129, 140, 248, 0.12); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3); }
+    .announce-tag[data-color="slate"]   { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+    /* ===== الإعلان المميز ===== */
+    .announce-featured {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.14) 0%, rgba(59, 130, 246, 0.06) 100%);
+      border: 1.5px solid rgba(192, 132, 252, 0.4);
+      box-shadow: 0 20px 60px rgba(168, 85, 247, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .announce-featured::after {
+      content: '';
+      position: absolute;
+      top: -100px;
+      inset-inline-end: -100px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(192, 132, 252, 0.35) 0%, transparent 70%);
+      filter: blur(60px);
+      pointer-events: none;
+      animation: featured-glow 4s ease-in-out infinite;
+    }
+    @keyframes featured-glow {
+      0%, 100% { opacity: 0.6; }
+      50%      { opacity: 1; }
+    }
+    .announce-featured .announce-title { font-size: 18px; }
+
+    .featured-badge {
+      position: absolute;
+      top: 16px;
+      inset-inline-end: 16px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #c084fc, #a855f7);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.5);
+      z-index: 3;
+      animation: badge-pulse 2s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.5); }
+      50%      { transform: scale(1.06); box-shadow: 0 6px 20px rgba(168, 85, 247, 0.7); }
+    }
+
+    .dev-names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      position: relative;
+      z-index: 2;
+    }
+    .dev-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(192, 132, 252, 0.18) 0%, rgba(168, 85, 247, 0.08) 100%);
+      border: 1px solid rgba(192, 132, 252, 0.4);
+      color: #e9d5ff;
+      font-size: 13px;
+      font-weight: 800;
+      transition: all 0.3s ease;
+    }
+    .dev-name:hover {
+      transform: translateY(-2px) scale(1.04);
+      background: linear-gradient(135deg, rgba(192, 132, 252, 0.3) 0%, rgba(168, 85, 247, 0.15) 100%);
+      box-shadow: 0 8px 25px rgba(168, 85, 247, 0.35);
+      color: #ffffff;
+    }
+    .dev-name .dev-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c084fc, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .dev-name .dev-role {
+      font-size: 10px;
+      color: rgba(233, 213, 255, 0.65);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .project-progress {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px dashed rgba(192, 132, 252, 0.25);
+      position: relative;
+      z-index: 2;
+    }
+    .project-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 800;
+      color: rgba(233, 213, 255, 0.85);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+    .project-progress-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(30, 20, 60, 0.6);
+      overflow: hidden;
+      position: relative;
+    }
+    .project-progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(to left, #c084fc, #a855f7, #60a5fa, #c084fc);
+      background-size: 200% 100%;
+      box-shadow: 0 0 15px rgba(192, 132, 252, 0.6);
+      animation: progress-shimmer 2.5s linear infinite;
+      width: 0%;
+    }
+    @keyframes progress-shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+  </style>
+</head>
+
+<body class="font-cairo overflow-x-hidden">
+
+  <div id="three-bg"></div>
+  <div class="glow-orb o1"></div>
+  <div class="glow-orb o2"></div>
+
+  <div id="sidebar-mount"></div>
+
+  <main id="main-content">
+    <div id="header-mount"></div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+      <section id="hero">
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight">
+          <span class="bg-gradient-to-l from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent" data-i18n="pageAnnounceTitle">الإعلانات</span>
+        </h1>
+        <p class="mt-2 text-stone-400 text-sm sm:text-base" data-i18n="pageAnnounceSub">كل الإعلانات والتعميمات</p>
+      </section>
+
+      <section id="announcements-list" class="space-y-4 max-w-4xl"></section>
+
+    </div>
+  </main>
+
+  <div id="bottom-nav-mount"></div>
+
+  <script src="libs/sweetalert2.min.js" defer></script>
+  <script src="libs/gsap.min.js" defer></script>
+  <script src="libs/three.min.js" defer></script>
+  <script src="libs/aos.js" defer></script>
+  <script src="js/sound-manager.js" defer></script>
+  <script src="js/three-scene.js" defer></script>
+  <script src="js/app.js" defer></script>
+
+  <script defer>
+    document.addEventListener('madrasati:ready', () => {
+      const App = window.App;
+
+      const developers = [
+        { name_ar: 'أنس حسين',     name_en: 'Anas Hussein',       role_ar: 'مطوّر رئيسي', role_en: 'Lead Developer' },
+        { name_ar: 'بلال خضير',    name_en: 'Bilal Khudair',      role_ar: 'مطوّر',       role_en: 'Developer' },
+        { name_ar: 'خلدون الأسدي', name_en: 'Khaldoun Al-Asadi',  role_ar: 'مطوّر',       role_en: 'Developer' },
+      ];
+
+      const announcements = [
+        {
+          type: 'featured', color: 'purple', icon: 'code',
+          featured_badge_ar: 'مميز', featured_badge_en: 'Featured',
+          date_ar: '13 أكتوبر 2026', date_en: 'October 13, 2026',
+          title_ar: '🚀 مشروع "مدرستي" — قيد التطوير',
+          title_en: '🚀 "Madrasati" Project — In Development',
+          body_ar: 'فريق من طلاب قسم تقنيات الحاسوب يعمل على بناء منصة إلكترونية متكاملة لخدمة الطلاب والمعلمين. المشروع النهائي سيصدر قريباً بإذن الله.',
+          body_en: 'A team of Computer Technology students is building a complete electronic platform for students and teachers. The final project will be released soon.',
+          tag_ar: 'قريباً', tag_en: 'Coming Soon',
+          developers: developers, progress: 75,
+        },
+        {
+          color: 'amber', icon: 'megaphone',
+          date_ar: '12 أكتوبر 2026', date_en: 'October 12, 2026',
+          title_ar: 'بدء التسجيل للامتحانات العملية للفصل الأول',
+          title_en: 'Registration open for first-term practical exams',
+          body_ar: 'يرجى من جميع الطلاب مراجعة إدارة القسم لاستلام بطاقات الامتحانات العملية في أقرب وقت. آخر موعد للتسجيل هو 25 أكتوبر.',
+          body_en: 'All students should visit the department office to collect exam cards as soon as possible. Registration deadline: October 25.',
+          tag_ar: 'هام', tag_en: 'Important',
+        },
+        {
+          color: 'blue', icon: 'academic',
+          date_ar: '10 أكتوبر 2026', date_en: 'October 10, 2026',
+          title_ar: '🎓 ورشة عمل: أساسيات الأمن السيبراني',
+          title_en: '🎓 Workshop: Cybersecurity Fundamentals',
+          body_ar: 'ستُقام ورشة عمل مجانية في مخبر الحاسوب يوم الخميس القادم الساعة 10 صباحاً. الحضور مفتوح لجميع طلاب القسم. سيتخللها تطبيق عملي مباشر.',
+          body_en: 'A free workshop will be held in the computer lab next Thursday at 10 AM. Open to all department students. Includes hands-on practice.',
+          tag_ar: 'ورشة', tag_en: 'Workshop',
+        },
+        {
+          color: 'emerald', icon: 'calendar',
+          date_ar: '8 أكتوبر 2026', date_en: 'October 8, 2026',
+          title_ar: 'تحديث جدول الحصص الأسبوعية للفئة الثالثة',
+          title_en: 'Weekly schedule updated for Group 3',
+          body_ar: 'تم تحديث الجدول الأسبوعي للفئة الثالثة. يرجى من الطلاب مراجعة البرنامج الأسبوعي من صفحتهم.',
+          body_en: 'The weekly schedule for Group 3 has been updated. Please review it from your page.',
+          tag_ar: 'تحديث', tag_en: 'Update',
+        },
+        {
+          color: 'rose', icon: 'bell',
+          date_ar: '5 أكتوبر 2026', date_en: 'October 5, 2026',
+          title_ar: 'تعطيل الدوام يوم الأحد القادم',
+          title_en: 'School closed next Sunday',
+          body_ar: 'بمناسبة عطلة رسمية، سيتم تعطيل الدوام يوم الأحد القادم. يُستأنف الدوام بشكل طبيعي يوم الاثنين.',
+          body_en: 'Due to an official holiday, school will be closed next Sunday. Classes resume normally on Monday.',
+          tag_ar: 'إداري', tag_en: 'Admin',
+        },
+        {
+          color: 'cyan', icon: 'trophy',
+          date_ar: '3 أكتوبر 2026', date_en: 'October 3, 2026',
+          title_ar: '🏆 مسابقة البرمجة السنوية — سجّل الآن!',
+          title_en: '🏆 Annual Programming Competition — Register Now!',
+          body_ar: 'تنطلق مسابقة البرمجة السنوية بمشاركة جميع الفئات. الجوائز قيّمة والفائزون سيحصلون على شهادات تقدير. التسجيل مفتوح حتى 20 أكتوبر.',
+          body_en: 'The annual programming competition kicks off with all groups participating. Valuable prizes and certificates for winners. Registration open until October 20.',
+          tag_ar: 'مسابقة', tag_en: 'Competition',
+        },
+        {
+          color: 'indigo', icon: 'book',
+          date_ar: '1 أكتوبر 2026', date_en: 'October 1, 2026',
+          title_ar: '📚 إطلاق مكتبة الكتب الرقمية قريباً',
+          title_en: '📚 Digital Books Library Coming Soon',
+          body_ar: 'يستعد القسم لإطلاق مكتبة إلكترونية تضم جميع كتب المنهاج بصيغة PDF، مع إمكانية القراءة والتحميل مباشرة من الموقع. تابعوا الإعلانات.',
+          body_en: 'The department is preparing to launch a digital library with all curriculum books in PDF format. You can read and download directly from the site. Stay tuned.',
+          tag_ar: 'جديد', tag_en: 'New',
+        },
+        {
+          color: 'purple', icon: 'briefcase',
+          date_ar: '28 سبتمبر 2026', date_en: 'September 28, 2026',
+          title_ar: '💼 يوم المهنة في القسم',
+          title_en: '💼 Career Day at the Department',
+          body_ar: 'يستضيف القسم نخبة من المهندسين والخبراء في مجالات الشبكات والبرمجة لتعريف الطلاب بسوق العمل. الحضور إلزامي لطلاب الصف الثاني.',
+          body_en: 'The department hosts top engineers and experts in networking and programming to introduce students to the job market. Attendance is mandatory for second-year students.',
+          tag_ar: 'فعالية', tag_en: 'Event',
+        },
+        {
+          color: 'slate', icon: 'wrench',
+          date_ar: '25 سبتمبر 2026', date_en: 'September 25, 2026',
+          title_ar: 'صيانة دورية لمخابر الحاسوب',
+          title_en: 'Periodic maintenance of computer labs',
+          body_ar: 'سيتم إجراء صيانة دورية لمخابر الحاسوب يوم الخميس القادم. يُرجى من الطلاب حفظ ملفاتهم مسبقاً.',
+          body_en: 'Periodic maintenance will be performed on computer labs next Thursday. Students should save their files in advance.',
+          tag_ar: 'تنبيه', tag_en: 'Notice',
+        },
+      ];
+
+      const icons = {
+        megaphone: '<path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />',
+        academic: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 14v7" />',
+        calendar: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />',
+        bell: '<path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />',
+        code: '<path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />',
+        trophy: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />',
+        book: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />',
+        briefcase: '<path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />',
+        wrench: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />',
+      };
+
+      function render() {
+        const list = document.getElementById('announcements-list');
+        const lang = App.getCurrentLang();
+        const isAr = lang === 'ar';
+
+        list.innerHTML = announcements.map((a) => {
+          const date  = isAr ? a.date_ar  : a.date_en;
+          const title = isAr ? a.title_ar : a.title_en;
+          const body  = isAr ? a.body_ar  : a.body_en;
+          const tag   = isAr ? a.tag_ar   : a.tag_en;
+
+          if (a.type === 'featured') {
+            const badge = isAr ? a.featured_badge_ar : a.featured_badge_en;
+            const devsHTML = a.developers.map(d => {
+              const name = isAr ? d.name_ar : d.name_en;
+              const role = isAr ? d.role_ar : d.role_en;
+              return `
+                <span class="dev-name">
+                  <span class="dev-avatar">${name.charAt(0)}</span>
+                  <span>${name}</span>
+                  <span class="dev-role">${role}</span>
+                </span>
+              `;
+            }).join('');
+
+            return `
+              <div class="announce-card announce-featured" data-color="${a.color}">
+                <span class="featured-badge">${badge}</span>
+                <div class="announce-icon" data-color="${a.color}">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    ${icons[a.icon]}
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="announce-date">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    ${date}
+                  </div>
+                  <div class="announce-title">${title}</div>
+                  <div class="announce-body">${body}</div>
+                  <div class="dev-names">${devsHTML}</div>
+                  <div class="project-progress">
+                    <div class="project-progress-label">
+                      <span>${isAr ? 'نسبة الإنجاز' : 'Progress'}</span>
+                      <span>${a.progress}%</span>
+                    </div>
+                    <div class="project-progress-bar">
+                      <div class="project-progress-fill" data-progress="${a.progress}"></div>
+                    </div>
+                  </div>
+                  <span class="announce-tag" data-color="${a.color}" style="margin-top: 16px;">${tag}</span>
+                </div>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="announce-card" data-color="${a.color}">
+              <div class="announce-icon" data-color="${a.color}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  ${icons[a.icon]}
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="announce-date">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  ${date}
+                </div>
+                <div class="announce-title">${title}</div>
+                <div class="announce-body">${body}</div>
+                <span class="announce-tag" data-color="${a.color}">${tag}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // ===== حركات GSAP =====
+        if (window.gsap) {
+          // 1. الحالة الأولية
+          gsap.set('.announce-card', { opacity: 0, y: 40, scale: 0.96 });
+
+          // 2. الظهور بحركة
+          gsap.to('.announce-card', {
+            opacity: 1, y: 0, scale: 1,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: 'power3.out',
+            onComplete: () => {
+              // 3. مسح الـ inline styles → العنصر يعود طبيعياً (مرئي دائماً)
+              document.querySelectorAll('.announce-card').forEach(el => {
+                el.style.opacity = '';
+                el.style.transform = '';
+              });
+            }
+          });
+
+          // شريط التقدم
+          document.querySelectorAll('.project-progress-fill').forEach(el => {
+            const target = parseInt(el.dataset.progress) || 0;
+            gsap.fromTo(el,
+              { width: '0%' },
+              { width: target + '%', duration: 1.8, delay: 0.8, ease: 'power3.out' }
+            );
+          });
+        }
+
+        App.setupCardTilt();
+      }
+
+      render();
+      document.addEventListener('madrasati:language-changed', render);
+    });
+  </script>
+</body>
+</html>

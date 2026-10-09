@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ملفي الشخصي | مدرستي</title>
+
+  <script src="libs/tailwind.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { cairo: ['Cairo', 'sans-serif'] } } } };
+  </script>
+
+  <link href="libs/aos.css" rel="stylesheet" />
+  <link href="css/style.css" rel="stylesheet" />
+
+  <style>
+
+    /* ============================================================
+       🪪 بطاقة الهوية الرقمية
+       ============================================================ */
+
+    #id-card-wrap {
+      perspective: 1400px;
+      display: flex;
+      justify-content: center;
+      padding: 20px 0 40px;
+    }
+
+    .id-card {
+      position: relative;
+      width: 100%;
+      max-width: 620px;
+      border-radius: 28px;
+      padding: 32px 36px;
+      background:
+        linear-gradient(135deg, rgba(20, 15, 10, 0.95) 0%, rgba(30, 20, 8, 0.9) 100%);
+      border: 1.5px solid rgba(251, 191, 36, 0.35);
+      box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.6),
+        0 0 80px rgba(251, 191, 36, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      will-change: transform;
+      transform-origin: center;
+    }
+
+    /* طبقة الهولوجرام (تتحرك مع الماوس) */
+    .id-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(251, 191, 36, 0.28) 0%,
+        rgba(251, 191, 36, 0.08) 25%,
+        transparent 60%
+      );
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .id-card:hover::before { opacity: 1; }
+
+    /* خطوط مضيئة داخلية */
+    .id-card::after {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(251, 191, 36, 0.15);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ===== شريط علوي ذهبي ===== */
+    .id-card-topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        #fcd34d 20%,
+        #fbbf24 50%,
+        #fcd34d 80%,
+        transparent 100%
+      );
+      animation: topbar-shimmer 4s ease-in-out infinite;
+    }
+    @keyframes topbar-shimmer {
+      0%, 100% { opacity: 0.6; filter: blur(0px); }
+      50%      { opacity: 1;   filter: blur(0.5px); }
+    }
+
+    /* ===== خط الماسح (Scanner line) ===== */
+    .scanner-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(251, 191, 36, 0.9) 50%,
+        transparent 100%
+      );
+      box-shadow:
+        0 0 20px rgba(251, 191, 36, 0.8),
+        0 0 40px rgba(251, 191, 36, 0.4);
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    /* ===== الشعار والأيقونة ===== */
+    .id-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      position: relative;
+      z-index: 2;
+    }
+    .id-brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(251, 191, 36, 0.4);
+      flex-shrink: 0;
+    }
+    .id-brand-logo svg { width: 24px; height: 24px; color: #1c1917; }
+    .id-brand-text { min-width: 0; flex: 1; }
+    .id-brand-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #fef3c7;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+    }
+    .id-brand-sub {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(251, 191, 36, 0.6);
+      letter-spacing: 0.2em;
+      margin-top: 3px;
+    }
+    .id-brand-badge {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(251, 191, 36, 0.15);
+      color: #fcd34d;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      flex-shrink: 0;
+    }
+
+    /* ===== جسم البطاقة ===== */
+    .id-body {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 22px;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Avatar */
+    .id-avatar-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+    }
+    .id-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: 900;
+      color: #1c1917;
+      box-shadow:
+        0 12px 30px rgba(251, 191, 36, 0.4),
+        inset 0 0 0 3px rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+    /* لمعة على الصورة */
+    .id-avatar::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.35) 50%,
+        transparent 70%
+      );
+      animation: avatar-shine 5s ease-in-out infinite;
+    }
+    @keyframes avatar-shine {
+      0%, 100% { transform: translateX(-100%) rotate(45deg); }
+      50%      { transform: translateX(100%) rotate(45deg); }
+    }
+
+    /* معلومات الطالب */
+    .id-info { min-width: 0; }
+    .id-name {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .id-role {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(30, 64, 175, 0.25);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      color: #93c5fd;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+    }
+    .id-role svg { width: 13px; height: 13px; }
+
+    .id-meta {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 14px;
+      font-size: 12px;
+    }
+    .id-meta-key {
+      color: rgba(251, 191, 36, 0.55);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .id-meta-val {
+      color: #e7e5e4;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* QR Code */
+    .id-qr-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .id-qr {
+      width: 88px;
+      height: 88px;
+      background: #fef3c7;
+      border-radius: 10px;
+      padding: 6px;
+      box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .id-qr svg { width: 100%; height: 100%; display: block; }
+    .id-qr-label {
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      color: rgba(251, 191, 36, 0.7);
+    }
+
+    /* ===== الشريط السفلي ===== */
+    .id-footer {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px dashed rgba(251, 191, 36, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 2;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .id-footer-text {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: rgba(251, 191, 36, 0.5);
+    }
+    .id-footer-id {
+      font-size: 12px;
+      font-weight: 900;
+      color: #fcd34d;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.08em;
+    }
+
+    /* ============================================================
+       🏅 شارات الإنجاز
+       ============================================================ */
+
+    .badges-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (min-width: 640px) { .badges-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .badges-grid { grid-template-columns: repeat(6, 1fr); } }
+
+    .badge-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 8px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(251, 191, 36, 0.12);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
+      cursor: default;
+    }
+    .badge-item:hover {
+      transform: translateY(-6px) scale(1.05);
+      border-color: rgba(251, 191, 36, 0.5);
+      background: rgba(251, 191, 36, 0.06);
+      box-shadow: 0 20px 40px rgba(251, 191, 36, 0.2);
+    }
+    .badge-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .badge-item:hover .badge-icon-wrap {
+      transform: scale(1.15) rotate(-8deg);
+    }
+    .badge-item[data-badge="excellent"] .badge-icon-wrap {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(217, 119, 6, 0.1));
+      box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+    }
+    .badge-item[data-badge="reader"] .badge-icon-wrap {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.25), rgba(59, 130, 246, 0.1));
+      box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3);
+    }
+    .badge-item[data-badge="coder"] .badge-icon-wrap {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(16, 185, 129, 0.1));
+      box-shadow: 0 8px 20px rgba(52, 211, 153, 0.3);
+    }
+    .badge-item[data-badge="punctual"] .badge-icon-wrap {
+      background: linear-gradient(135deg, rgba(251, 113, 133, 0.25), rgba(244, 63, 94, 0.1));
+      box-shadow: 0 8px 20px rgba(251, 113, 133, 0.3);
+    }
+    .badge-item[data-badge="helper"] .badge-icon-wrap {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(139, 92, 246, 0.1));
+      box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3);
+    }
+    .badge-item[data-badge="creative"] .badge-icon-wrap {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 165, 233, 0.1));
+      box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+    }
+    .badge-label {
+      font-size: 10px;
+      font-weight: 900;
+      color: #a8a29e;
+      text-align: center;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+    }
+
+    /* ============================================================
+       📊 إحصائيات سريعة
+       ============================================================ */
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (min-width: 640px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .stat-box {
+      position: relative;
+      padding: 20px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(251, 191, 36, 0.1);
+      text-align: center;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      transform-style: preserve-3d;
+    }
+    .stat-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(to left, transparent, #fbbf24, transparent);
+      opacity: 0.4;
+    }
+    .stat-box:hover {
+      border-color: rgba(251, 191, 36, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(251, 191, 36, 0.1);
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fbbf24;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #78716c;
+      letter-spacing: 0.1em;
+    }
+
+    /* ============================================================
+       🎬 أنميشن الدخول السينمائي
+       ============================================================ */
+
+    /* الحالة الأولية — كل شيء مخفي */
+    .anim-hidden {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+
+    /* عنوان الصفحة يدخل من الجانب */
+    .profile-title-sweep {
+      display: inline-block;
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+
+    /* ===== رأس الصفحة (Section Header) ===== */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to left, transparent, rgba(251, 191, 36, 0.4), transparent);
+    }
+
+  </style>
+</head>
+
+<body class="font-cairo overflow-x-hidden">
+
+  <div id="three-bg"></div>
+  <div class="glow-orb o1"></div>
+  <div class="glow-orb o2"></div>
+
+  <div id="sidebar-mount"></div>
+
+  <main id="main-content">
+    <div id="header-mount"></div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+
+      <!-- ===== Hero Title ===== -->
+      <section id="hero">
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight">
+          <span class="profile-title-sweep bg-gradient-to-l from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent" data-i18n="pageProfileTitle">ملفي الشخصي</span>
+        </h1>
+        <p class="mt-2 text-stone-400 text-sm sm:text-base anim-hidden" id="hero-sub" data-i18n="pageProfileSub">معلوماتك الشخصية والدراسية</p>
+      </section>
+
+      <!-- ===== Digital ID Card ===== -->
+      <section id="id-card-wrap">
+        <div class="id-card" id="id-card">
+
+          <div class="id-card-topbar"></div>
+          <div class="scanner-line" id="scanner-line"></div>
+
+          <!-- Brand -->
+          <div class="id-brand">
+            <div class="id-brand-logo">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14v7" />
+              </svg>
+            </div>
+            <div class="id-brand-text">
+              <div class="id-brand-title">الثانوية الصناعية المختلطة</div>
+              <div class="id-brand-sub">قسم تقنيات الحاسوب</div>
+            </div>
+            <span class="id-brand-badge" id="id-badge">STUDENT ID</span>
+          </div>
+
+          <!-- Body -->
+          <div class="id-body">
+            <div class="id-avatar-wrap">
+              <div class="id-avatar" id="id-avatar">—</div>
+            </div>
+
+            <div class="id-info">
+              <div class="id-name" id="id-name">—</div>
+              <span class="id-role" id="id-role">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                </svg>
+                <span id="id-role-text">طالب</span>
+              </span>
+
+              <div class="id-meta">
+                <span class="id-meta-key" data-i18n="idShabahKey">الشعبة</span>
+                <span class="id-meta-val" id="id-meta-shabah">—</span>
+
+                <span class="id-meta-key" data-i18n="idFatehKey">الفئة</span>
+                <span class="id-meta-val" id="id-meta-fateh">—</span>
+
+                <span class="id-meta-key" data-i18n="idGenderKey">الجنس</span>
+                <span class="id-meta-val" id="id-meta-gender">—</span>
+              </div>
+            </div>
+
+            <div class="id-qr-wrap">
+              <div class="id-qr" id="id-qr">
+                <!-- SVG QR code placeholder -->
+                <svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="29" height="29" fill="#fef3c7"/>
+                  <g fill="#1c1917">
+                    <!-- Corner squares (top-left) -->
+                    <rect x="0" y="0" width="7" height="7"/>
+                    <rect x="1" y="1" width="5" height="5" fill="#fef3c7"/>
+                    <rect x="2" y="2" width="3" height="3"/>
+                    <!-- Corner squares (top-right) -->
+                    <rect x="22" y="0" width="7" height="7"/>
+                    <rect x="23" y="1" width="5" height="5" fill="#fef3c7"/>
+                    <rect x="24" y="2" width="3" height="3"/>
+                    <!-- Corner squares (bottom-left) -->
+                    <rect x="0" y="22" width="7" height="7"/>
+                    <rect x="1" y="23" width="5" height="5" fill="#fef3c7"/>
+                    <rect x="2" y="24" width="3" height="3"/>
+                    <!-- Data pattern (random-looking) -->
+                    <rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="15" y="0" width="1" height="1"/><rect x="18" y="0" width="1" height="1"/>
+                    <rect x="9" y="1" width="1" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="19" y="1" width="1" height="1"/>
+                    <rect x="10" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="17" y="2" width="1" height="1"/>
+                    <rect x="9" y="3" width="1" height="1"/><rect x="11" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/>
+                    <rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="15" y="4" width="1" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="19" y="4" width="1" height="1"/>
+                    <rect x="9" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="16" y="5" width="1" height="1"/><rect x="18" y="5" width="1" height="1"/>
+                    <rect x="0" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="17" y="9" width="1" height="1"/><rect x="20" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="26" y="9" width="1" height="1"/>
+                    <rect x="1" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="21" y="10" width="1" height="1"/><rect x="24" y="10" width="1" height="1"/><rect x="27" y="10" width="1" height="1"/>
+                    <rect x="0" y="11" width="1" height="1"/><rect x="4" y="11" width="1" height="1"/><rect x="7" y="11" width="1" height="1"/><rect x="10" y="11" width="1" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="19" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="25" y="11" width="1" height="1"/><rect x="28" y="11" width="1" height="1"/>
+                    <rect x="2" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/><rect x="23" y="12" width="1" height="1"/><rect x="26" y="12" width="1" height="1"/>
+                    <rect x="1" y="13" width="1" height="1"/><rect x="4" y="13" width="1" height="1"/><rect x="6" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="12" y="13" width="1" height="1"/><rect x="15" y="13" width="1" height="1"/><rect x="18" y="13" width="1" height="1"/><rect x="21" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="27" y="13" width="1" height="1"/>
+                    <rect x="0" y="14" width="1" height="1"/><rect x="3" y="14" width="1" height="1"/><rect x="7" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="25" y="14" width="1" height="1"/><rect x="28" y="14" width="1" height="1"/>
+                    <rect x="2" y="15" width="1" height="1"/><rect x="5" y="15" width="1" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="14" y="15" width="1" height="1"/><rect x="17" y="15" width="1" height="1"/><rect x="20" y="15" width="1" height="1"/><rect x="23" y="15" width="1" height="1"/><rect x="26" y="15" width="1" height="1"/>
+                    <rect x="1" y="16" width="1" height="1"/><rect x="4" y="16" width="1" height="1"/><rect x="9" y="16" width="1" height="1"/><rect x="12" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="18" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="27" y="16" width="1" height="1"/>
+                    <rect x="0" y="17" width="1" height="1"/><rect x="3" y="17" width="1" height="1"/><rect x="6" y="17" width="1" height="1"/><rect x="10" y="17" width="1" height="1"/><rect x="13" y="17" width="1" height="1"/><rect x="16" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="22" y="17" width="1" height="1"/><rect x="25" y="17" width="1" height="1"/><rect x="28" y="17" width="1" height="1"/>
+                    <rect x="9" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="21" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="27" y="19" width="1" height="1"/>
+                    <rect x="11" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="26" y="20" width="1" height="1"/>
+                    <rect x="10" y="21" width="1" height="1"/><rect x="13" y="21" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="22" y="21" width="1" height="1"/><rect x="25" y="21" width="1" height="1"/>
+                    <rect x="9" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="15" y="23" width="1" height="1"/><rect x="18" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="24" y="23" width="1" height="1"/><rect x="27" y="23" width="1" height="1"/>
+                    <rect x="10" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="19" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="25" y="24" width="1" height="1"/>
+                    <rect x="9" y="25" width="1" height="1"/><rect x="14" y="25" width="1" height="1"/><rect x="17" y="25" width="1" height="1"/><rect x="20" y="25" width="1" height="1"/><rect x="23" y="25" width="1" height="1"/><rect x="26" y="25" width="1" height="1"/>
+                    <rect x="11" y="26" width="1" height="1"/><rect x="15" y="26" width="1" height="1"/><rect x="18" y="26" width="1" height="1"/><rect x="21" y="26" width="1" height="1"/><rect x="24" y="26" width="1" height="1"/><rect x="27" y="26" width="1" height="1"/>
+                    <rect x="12" y="27" width="1" height="1"/><rect x="16" y="27" width="1" height="1"/><rect x="19" y="27" width="1" height="1"/><rect x="22" y="27" width="1" height="1"/><rect x="25" y="27" width="1" height="1"/>
+                    <rect x="10" y="28" width="1" height="1"/><rect x="13" y="28" width="1" height="1"/><rect x="17" y="28" width="1" height="1"/><rect x="20" y="28" width="1" height="1"/><rect x="23" y="28" width="1" height="1"/><rect x="26" y="28" width="1" height="1"/>
+                  </g>
+                </svg>
+              </div>
+              <span class="id-qr-label">SCAN ME</span>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="id-footer">
+            <span class="id-footer-text" data-i18n="idIssued">صادر عن قسم تقنيات الحاسوب</span>
+            <span class="id-footer-id" id="id-number">2026-11-000</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== Badges ===== -->
+      <section id="badges-section">
+        <div class="section-header">
+          <h2 class="text-xl sm:text-2xl font-black text-white whitespace-nowrap" data-i18n="badgesTitle">🏅 شارات الإنجاز</h2>
+          <span class="section-line"></span>
+        </div>
+
+        <div class="badges-grid">
+          <div class="badge-item" data-badge="excellent" data-aos="zoom-in">
+            <div class="badge-icon-wrap">🏆</div>
+            <div class="badge-label" data-i18n="badgeExcellent">متفوق</div>
+          </div>
+          <div class="badge-item" data-badge="reader" data-aos="zoom-in" data-aos-delay="80">
+            <div class="badge-icon-wrap">📚</div>
+            <div class="badge-label" data-i18n="badgeReader">قارئ</div>
+          </div>
+          <div class="badge-item" data-badge="coder" data-aos="zoom-in" data-aos-delay="160">
+            <div class="badge-icon-wrap">💻</div>
+            <div class="badge-label" data-i18n="badgeCoder">مبرمج</div>
+          </div>
+          <div class="badge-item" data-badge="punctual" data-aos="zoom-in" data-aos-delay="240">
+            <div class="badge-icon-wrap">⏰</div>
+            <div class="badge-label" data-i18n="badgePunctual">ملتزم</div>
+          </div>
+          <div class="badge-item" data-badge="helper" data-aos="zoom-in" data-aos-delay="320">
+            <div class="badge-icon-wrap">🤝</div>
+            <div class="badge-label" data-i18n="badgeHelper">متساعد</div>
+          </div>
+          <div class="badge-item" data-badge="creative" data-aos="zoom-in" data-aos-delay="400">
+            <div class="badge-icon-wrap">🎨</div>
+            <div class="badge-label" data-i18n="badgeCreative">مبدع</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Quick Stats ===== -->
+      <section id="stats-section">
+        <div class="section-header">
+          <h2 class="text-xl sm:text-2xl font-black text-white whitespace-nowrap" data-i18n="statsTitle">📊 نظرة سريعة</h2>
+          <span class="section-line"></span>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-box" data-aos="fade-up">
+            <div class="stat-value">8</div>
+            <div class="stat-label" data-i18n="statSubjects">المواد</div>
+          </div>
+          <div class="stat-box" data-aos="fade-up" data-aos-delay="80">
+            <div class="stat-value" id="stat-fateh">—</div>
+            <div class="stat-label" data-i18n="statGroup">الفئة</div>
+          </div>
+          <div class="stat-box" data-aos="fade-up" data-aos-delay="160">
+            <div class="stat-value" id="stat-shabah">—</div>
+            <div class="stat-label" data-i18n="statSection">الشعبة</div>
+          </div>
+          <div class="stat-box" data-aos="fade-up" data-aos-delay="240">
+            <div class="stat-value">95%</div>
+            <div class="stat-label" data-i18n="statAttendance">الحضور</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="bottom-nav-mount"></div>
+
+  <script src="libs/sweetalert2.min.js" defer></script>
+  <script src="libs/gsap.min.js" defer></script>
+  <script src="libs/three.min.js" defer></script>
+  <script src="libs/aos.js" defer></script>
+  <script src="js/sound-manager.js" defer></script>
+  <script src="js/three-scene.js" defer></script>
+  <script src="js/app.js" defer></script>
+
+  <script defer>
+    document.addEventListener('madrasati:ready', () => {
+      const App = window.App;
+      const student = App.getStudent();
+
+      // ===== الترجمات الإضافية =====
+      const extra = {
+        ar: {
+          idShabahKey: 'الشعبة', idFatehKey: 'الفئة', idGenderKey: 'الجنس',
+          idIssued: 'صادر عن قسم تقنيات الحاسوب',
+          badgesTitle: '🏅 شارات الإنجاز',
+          badgeExcellent: 'متفوق', badgeReader: 'قارئ', badgeCoder: 'مبرمج',
+          badgePunctual: 'ملتزم', badgeHelper: 'متساعد', badgeCreative: 'مبدع',
+          statsTitle: '📊 نظرة سريعة',
+          statSubjects: 'المواد', statGroup: 'الفئة', statSection: 'الشعبة', statAttendance: 'الحضور',
+          student: 'طالب',
+          shabah5: 'الخامسة', shabah6: 'السادسة',
+          fateh1: 'الأولى', fateh2: 'الثانية', fateh3: 'الثالثة', fateh4: 'الرابعة',
+          male: 'ذكر', female: 'أنثى',
+        },
+        en: {
+          idShabahKey: 'Section', idFatehKey: 'Group', idGenderKey: 'Gender',
+          idIssued: 'Issued by Computer Technology Dept.',
+          badgesTitle: '🏅 Achievement Badges',
+          badgeExcellent: 'Excellent', badgeReader: 'Reader', badgeCoder: 'Coder',
+          badgePunctual: 'Punctual', badgeHelper: 'Helper', badgeCreative: 'Creative',
+          statsTitle: '📊 Quick Overview',
+          statSubjects: 'Subjects', statGroup: 'Group', statSection: 'Section', statAttendance: 'Attendance',
+          student: 'Student',
+          shabah5: 'Fifth', shabah6: 'Sixth',
+          fateh1: 'First', fateh2: 'Second', fateh3: 'Third', fateh4: 'Fourth',
+          male: 'Male', female: 'Female',
+        },
+      };
+
+      const getT = (key) => {
+        const lang = App.getCurrentLang();
+        return extra[lang][key] || key;
+      };
+
+      // ===== تعبئة بيانات البطاقة =====
+      function fillCard() {
+        const lang = App.getCurrentLang();
+        const isAr = lang === 'ar';
+
+        // Avatar
+        const avatarEl = document.getElementById('id-avatar');
+        if (avatarEl) avatarEl.textContent = student.initial;
+
+        // Name
+        const nameEl = document.getElementById('id-name');
+        if (nameEl) nameEl.textContent = student.name;
+
+        // Role
+        const roleTextEl = document.getElementById('id-role-text');
+        if (roleTextEl) roleTextEl.textContent = getT('student');
+
+        // Badge (ID type)
+        const badgeEl = document.getElementById('id-badge');
+        if (badgeEl) badgeEl.textContent = isAr ? 'بطاقة طالب' : 'STUDENT ID';
+
+        // Meta
+        const shabahEl = document.getElementById('id-meta-shabah');
+        const fatehEl = document.getElementById('id-meta-fateh');
+        const genderEl = document.getElementById('id-meta-gender');
+        const numberEl = document.getElementById('id-number');
+        const statFatehEl = document.getElementById('stat-fateh');
+        const statShabahEl = document.getElementById('stat-shabah');
+
+        const shabahText = student.shabah === '5' ? getT('shabah5') : getT('shabah6');
+        const fatehText = getT('fateh' + student.fateh);
+        const genderText = student.gender === 'female' ? getT('female') : getT('male');
+
+        if (shabahEl) shabahEl.textContent = shabahText;
+        if (fatehEl) fatehEl.textContent = fatehText;
+        if (genderEl) genderEl.textContent = genderText;
+        if (statFatehEl) statFatehEl.textContent = fatehText;
+        if (statShabahEl) statShabahEl.textContent = shabahText;
+
+        // ID Number
+        if (numberEl) {
+          const year = new Date().getFullYear();
+          numberEl.textContent = `${year}-${student.shabah || '11'}-${String(student.fateh || '0').padStart(3, '0')}`;
+        }
+      }
+
+      // ===== تعبئة الترجمات الإضافية =====
+      function fillTranslations() {
+        // كل عنصر data-i18n يستخدم extra translations
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.dataset.i18n;
+          if (extra[App.getCurrentLang()][key]) {
+            el.textContent = extra[App.getCurrentLang()][key];
+          }
+        });
+      }
+
+      // ===== 🎬 الأنميشن السينمائي =====
+      function playCinematicAnimation() {
+        if (!window.gsap) return;
+
+        const tl = gsap.timeline({ delay: 0.15 });
+
+        // 1. العنوان يدخل من الجانب
+        tl.to('.profile-title-sweep', {
+          opacity: 1,
+          x: 0,
+          duration: 0.7,
+          ease: 'power3.out',
+        });
+
+        // 2. العنوان الفرعي
+        tl.to('#hero-sub', {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          ease: 'power2.out',
+        }, '-=0.4');
+
+        // 3. البطاقة تظهر بتأثير "Materialize"
+        tl.fromTo('#id-card',
+          {
+            opacity: 0,
+            scale: 0.85,
+            rotateX: -25,
+            y: 50,
+            filter: 'blur(20px)',
+          },
+          {
+            opacity: 1,
+            scale: 1,
+            rotateX: 0,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 1.1,
+            ease: 'power3.out',
+          },
+          '-=0.2'
+        );
+
+        // 4. خط الماسح يمر على البطاقة
+        tl.fromTo('#scanner-line',
+          { top: '0%', opacity: 1 },
+          {
+            top: '100%',
+            opacity: 0,
+            duration: 1.2,
+            ease: 'power2.inOut',
+          },
+          '-=0.6'
+        );
+
+        // 5. عناصر البطاقة تظهر بتسلسل
+        tl.from('.id-brand', {
+          opacity: 0,
+          x: 30,
+          duration: 0.6,
+          ease: 'power3.out',
+        }, '-=0.9');
+
+        tl.from('.id-avatar-wrap', {
+          opacity: 0,
+          scale: 0.5,
+          duration: 0.6,
+          ease: 'back.out(1.8)',
+        }, '-=0.5');
+
+        tl.from('.id-info', {
+          opacity: 0,
+          x: 30,
+          duration: 0.6,
+          ease: 'power3.out',
+        }, '-=0.5');
+
+        tl.from('.id-qr-wrap', {
+          opacity: 0,
+          scale: 0.5,
+          duration: 0.6,
+          ease: 'back.out(1.8)',
+        }, '-=0.5');
+
+        tl.from('.id-footer', {
+          opacity: 0,
+          y: 20,
+          duration: 0.5,
+          ease: 'power2.out',
+        }, '-=0.3');
+
+        // 6. نبضة على البطاقة
+        tl.to('#id-card', {
+          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.6), 0 0 120px rgba(251, 191, 36, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+          duration: 0.4,
+          yoyo: true,
+          repeat: 1,
+          ease: 'power2.inOut',
+        });
+      }
+
+      // ===== تأثير الهولوجرام (يتابع الماوس) =====
+      function setupHologram() {
+        const card = document.getElementById('id-card');
+        if (!card) return;
+
+        const isTouch = window.matchMedia('(hover: none)').matches;
+        if (isTouch) return;
+
+        let lastTick = 0;
+
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          card.style.setProperty('--mx', `${(x / rect.width) * 100}%`);
+          card.style.setProperty('--my', `${(y / rect.height) * 100}%`);
+
+          const rotX = ((y - rect.height / 2) / rect.height) * -8;
+          const rotY = ((x - rect.width / 2) / rect.width) * 8;
+
+          if (window.gsap) {
+            gsap.to(card, {
+              rotationX: rotX,
+              rotationY: rotY,
+              scale: 1.02,
+              duration: 0.4,
+              ease: 'power2.out',
+              transformPerspective: 1400,
+            });
+          }
+        });
+
+        card.addEventListener('mouseenter', () => {
+          const now = Date.now();
+          if (now - lastTick < 100) return;
+          lastTick = now;
+          if (App) App.playSound('tick');
+        });
+
+        card.addEventListener('mouseleave', () => {
+          if (window.gsap) {
+            gsap.to(card, {
+              rotationX: 0, rotationY: 0, scale: 1,
+              duration: 0.6, ease: 'power3.out',
+              clearProps: 'rotationX,rotationY,scale',
+            });
+          }
+        });
+      }
+
+      // ===== التشغيل =====
+      fillCard();
+      fillTranslations();
+      playCinematicAnimation();
+      setupHologram();
+
+      // إعادة تعبئة عند تبديل اللغة
+      document.addEventListener('madrasati:language-changed', () => {
+        fillCard();
+        fillTranslations();
+      });
+    });
+  </script>
+</body>
+</html>
